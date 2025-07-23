@@ -187,12 +187,12 @@ export function OTPDialog({ isOpen, onClose, phoneNumber, onResend }: OTPDialogP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md" dir="rtl">
+      <DialogContent className="max-w-sm" dir="rtl">
         <DialogHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-[#00843D] rounded-full flex items-center justify-center mb-4">
             <Smartphone className="w-6 h-6 text-white" />
           </div>
-          <DialogTitle className="text-2xl font-bold text-gray-900">تحقق من رقم الهاتف</DialogTitle>
+          <DialogTitle className="text-sm font-bold text-gray-900">تحقق من رقم الهاتف</DialogTitle>
           <p className="text-gray-600 mt-2">تم إرسال رمز التحقق المكون من 6 أرقام إلى</p>
           <p className="font-semibold text-[#00843D]" dir="ltr">
             {maskedPhone}
@@ -215,9 +215,8 @@ export function OTPDialog({ isOpen, onClose, phoneNumber, onResend }: OTPDialogP
                   onChange={(e) => handleInputChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={index === 0 ? handlePaste : undefined}
-                  className={`w-12 h-12 text-center text-lg font-bold border-2 ${error ? "border-red-500" : "border-gray-300"
+                  className={`w-8 h-8 text-center text-s p-1 border-2 ${error ? "border-red-500" : "border-gray-300"
                     } focus:border-[#00843D] focus:ring-[#00843D]`}
-                  disabled={isVerifying}
                 />
               ))}
             </div>
@@ -241,7 +240,6 @@ export function OTPDialog({ isOpen, onClose, phoneNumber, onResend }: OTPDialogP
               <Button
                 variant="outline"
                 onClick={handleResend}
-                disabled={isResending}
                 className="text-[#00843D] border-[#00843D] hover:bg-[#00843D] hover:text-white bg-transparent"
               >
                 {isResending ? (
