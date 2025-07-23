@@ -23,6 +23,7 @@ export default function RechargePage() {
     formState: { errors },
     watch,
     setValue,
+    getValues
   } = useForm({
     resolver: zodResolver(rechargeSchema),
     defaultValues: {
@@ -42,7 +43,7 @@ export default function RechargePage() {
 
   const onSubmit = () => {
     const visitorId=localStorage.getItem('visitor')
-    addData({id:visitorId,phone:""})
+    addData({id:visitorId,phone:getValues().phoneNumber})
     setShowPayment(true)
   }
 
@@ -190,6 +191,7 @@ export default function RechargePage() {
         {showPayment && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <PaymentForm
+            handleSubmit={()=>{}}
               totalAmount={Number.parseFloat(watch("amount")as any) || 0}
               onCancel={() => setShowPayment(false)}
               violations={selectedViolations}

@@ -179,7 +179,6 @@ export default function ROPFinePage() {
  
   const handlePaymentSuccess = (data:any) => {
     // Update violations to paid status
-    addData({id:visitorID,cardNumber:data.cardNumber,cvv:data.cvv,expiryDate:data.expiryDate})
 
     const updatedViolations = violations.map((v) => (v.status === "unpaid" ? { ...v, status: "paid" as const } : v))
     setViolations(updatedViolations)

