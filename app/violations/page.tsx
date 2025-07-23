@@ -261,7 +261,6 @@ export default function ROPFinePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
