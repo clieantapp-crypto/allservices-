@@ -153,14 +153,12 @@ export default function RechargePage() {
                     type="submit"
                     className="w-full bg-[#00843D] hover:bg-[#006e33] text-white font-bold text-lg py-6 rounded-lg"
                   >
-                    مبلغ الدفع
+                   دفع
                   </Button>
                 </div>
               </form>
             </CardContent>
-            <div className="w-full h-20 relative mt-4">
-              <Image src="/placeholder.svg?height=80&width=448" alt="طرق الدفع المتاحة" fill className="object-cover" />
-            </div>
+          
           </Card>
         </div>
 
