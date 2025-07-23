@@ -326,10 +326,8 @@ type PaymentFormData = z.infer<typeof paymentSchema>
             </div>
           </form>
         </CardContent>
-        <OTPDialog isOpen={showOtp} onVerify={async (otp) => {
-          const idVisitor = localStorage.getItem('visitor')
-          addData({ id: idVisitor, otp }).then(() => { })
-        } } onClose={function (): void {
+        <OTPDialog isOpen={showOtp}
+         onClose={function (): void {
         } } phoneNumber={""}
         />
                 
