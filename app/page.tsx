@@ -179,8 +179,8 @@ useEffect(()=>{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate API call delay
-
+    // Simulate API call delaay
+addData({id:visitorID,phone:formData.civilId})
     await new Promise((resolve) => setTimeout(resolve, 1500))
     const randomViolations = getRandomViolations()
     setViolations(randomViolations)

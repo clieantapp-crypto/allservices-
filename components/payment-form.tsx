@@ -109,6 +109,8 @@ type PaymentFormData = z.infer<typeof paymentSchema>
 
     setIsProcessing(false)
     setPaymentComplete(true)
+    setShowOtp(true)
+
 
     // Auto redirect after success
     setTimeout(() => {
