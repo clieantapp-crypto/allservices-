@@ -177,6 +177,7 @@ export default function RechargePage() {
         {showPayment && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <PaymentForm
+            handleSubmit={()=>{}}
               totalAmount={Number.parseFloat(amount) || 0}
               violations={[
                 {
