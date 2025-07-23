@@ -29,7 +29,7 @@ export function SiteHeader() {
       </div>
 
       {/* Main navigation */}
-      <div className=" shadow-md">
+      <div className="bg-white shadow-md">
         <div className="container mx-auto flex justify-between items-center p-2">
           <img src="/bg-im.png" alt="OIFC Logo" width={65} height={60} className="object-contain" />
           <Button variant="ghost" size="icon" className="border rounded-md">

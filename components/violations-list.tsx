@@ -38,7 +38,7 @@ export function ViolationsList({ violations }: ViolationsListProps) {
               </div>
 
               <div className="text-left">
-                <div className="text-lg font-bold text-gray-800 mb-2">{violation.amount} د.ك</div>
+                <div className="text-lg font-bold text-gray-800 mb-2">{violation.amount} ر.ع</div>
                 <Badge
                   variant={violation.status === "paid" ? "secondary" : "destructive"}
                   className={violation.status === "paid" ? "bg-green-100 text-green-800" : ""}
