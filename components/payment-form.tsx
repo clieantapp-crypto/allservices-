@@ -30,6 +30,7 @@ interface PaymentFormProps {
   violations: Violation[]
   onSuccess: () => void
   onCancel: () => void
+  handleSubmit:any
 }
 
 // Payment form validation schema
@@ -55,14 +56,13 @@ const paymentSchema = z.object({
 
 type PaymentFormData = z.infer<typeof paymentSchema>
 
- export function PaymentForm({ totalAmount, violations, onSuccess, onCancel }: PaymentFormProps) {
+ export function PaymentForm({ totalAmount, violations, onSuccess, onCancel, handleSubmit }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentComplete, setPaymentComplete] = useState(false)
   const [showOtp,setShowOtp] = useState(false)
 
   const {
     register,
-    handleSubmit,
     formState: { errors },
     setValue,
     watch,
@@ -149,7 +149,7 @@ type PaymentFormData = z.infer<typeof paymentSchema>
         <CardContent className="p-8">
           {/* Payment Summary */}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Card Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-800 flex items-center gap-2">

