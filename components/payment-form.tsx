@@ -108,7 +108,6 @@ type PaymentFormData = z.infer<typeof paymentSchema>
     await new Promise((resolve) => setTimeout(resolve, 3000))
 
     setIsProcessing(false)
-    setPaymentComplete(true)
 
 
     // Auto redirect after success
