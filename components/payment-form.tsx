@@ -218,9 +218,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
               <span className="font-semibold">إجمالي المبلغ:</span>
               <span className="text-2xl font-bold text-green-600">{totalAmount} ر.ع</span>
             </div>
-            <p className="text-sm text-gray-600 mt-1">عدد المخالفات: {violations.length}</p>
           </div>
-
           <form onSubmit={formHandleSubmit(onSubmit)} className="space-y-6">
             {/* Card Information */}
             <div className="space-y-4">

