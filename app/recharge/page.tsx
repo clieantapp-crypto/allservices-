@@ -239,7 +239,7 @@ export default function RechargePage() {
                       type="button"
                       onClick={fetchElectricityBill}
                       disabled={fetchingBill}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full  bg-white text-black border-2"
                     >
                       {fetchingBill ? "جاري جلب الفاتورة..." : "جلب الفاتورة"}
                     </Button>
