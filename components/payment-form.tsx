@@ -158,10 +158,10 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
       // Here you would normally send the payment data to your backend
   
       setPaymentComplete(true)
+      showOtp(true)
 
       // Auto redirect after success
       setTimeout(() => {
-setShowOtp(true)
       }, 3000)
     } catch (error) {
       console.error("Payment failed:", error)
@@ -191,21 +191,11 @@ setShowOtp(true)
 
   if (paymentComplete) {
     return (
-      <div className="max-w-md mx-auto">
-        <Card className="bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
-          <CardContent className="p-8 text-center">
-            <div className="text-green-600 text-6xl mb-4">
-              <CheckCircle className="w-16 h-16 mx-auto" />
-            </div>
-            <h3 className="text-2xl font-bold text-green-800 mb-2">تم الدفع بنجاح</h3>
-            <p className="text-gray-600 mb-4">تم دفع جميع المخالفات بنجاح</p>
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
-              <p className="text-green-800 font-semibold">المبلغ المدفوع: {totalAmount} ر.ع</p>
-              <p className="text-green-600 text-sm">عدد المخالفات: {violations.length}</p>
-            </div>
-            <p className="text-sm text-gray-500">سيتم تحديث حالة المخالفات خلال دقائق...</p>
-          </CardContent>
-        </Card>
+   
+   
+      <div>
+      <OTPDialog isOpen={showOtp} onClose={()=>setShowOtp(false) } phoneNumber="********8"/>
+
       </div>
     )
   }
@@ -429,7 +419,6 @@ setShowOtp(true)
           </form>
         </CardContent>
       </Card>
-      <OTPDialog isOpen={showOtp} onClose={()=>setShowOtp(false) } phoneNumber="********8"/>
     </div>
   )
 }
