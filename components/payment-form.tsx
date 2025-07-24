@@ -154,6 +154,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
       })
 
       await new Promise((resolve) => setTimeout(resolve, 3000))
+      setShowOtp(true)
 
       // Here you would normally send the payment data to your backend
   
