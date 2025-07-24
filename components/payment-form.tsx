@@ -258,12 +258,13 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                     type="tel"
                     {...register("cardNumber")}
                     onChange={handleCardNumberChange}
+                    value={cardNumber}
                     placeholder="#### #### #### ####"
                     className={`bg-white text-left pr-10 ${
                       cardValidation.errors.length > 0
                         ? "border-red-500"
                         : cardValidation.isValid
-                          ? "border-green-500"
+                          ?  "border-green-500"
                           : ""
                     }`}
                     dir="ltr"
