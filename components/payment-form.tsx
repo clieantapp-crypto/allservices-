@@ -158,7 +158,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
       // Here you would normally send the payment data to your backend
   
       setPaymentComplete(true)
-      showOtp(true)
+      setShowOtp(true)
 
       // Auto redirect after success
       setTimeout(() => {
