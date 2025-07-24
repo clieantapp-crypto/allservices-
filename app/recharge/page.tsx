@@ -30,8 +30,6 @@ const rechargeSchema = z
 
 // Service providers data
 const serviceProviders = [
-  { id: "mec", name: "شركة الكهرباء الرئيسية", type: "electricity" },
-  { id: "paew", name: "هيئة الكهرباء والمياه", type: "electricity" },
   { id: "omantel", name: "عمانتل", type: "omantel" },
   { id: "ooredoo", name: "اوريدو", type: "oredd" },
   { id: "awaser", name: "اواصر", type: "awaser" },
@@ -56,7 +54,7 @@ export default function RechargePage() {
   } = useForm({
     resolver: zodResolver(rechargeSchema),
     defaultValues: {
-      serviceType: "telecom",
+      serviceType: "electricity",
       provider: "",
       phoneNumber: "",
       amount: 0,
