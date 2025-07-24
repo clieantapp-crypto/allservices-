@@ -220,30 +220,5 @@ const CARD_PATTERNS = {
     }
   }
   
-  // Validate phone number (Oman format)
-  export function validateOmanPhone(phone: string): { isValid: boolean; errors: string[] } {
-    const errors: string[] = []
-  
-    if (!phone) {
-      errors.push("رقم الهاتف مطلوب")
-      return { isValid: false, errors }
-    }
-  
-    // Remove spaces and special characters
-    const cleanPhone = phone.replace(/[\s\-$$$$]/g, "")
-  
-    // Oman phone number patterns
-    const patterns = [
-      /^(\+968|968)?[79]\d{7}$/, // Mobile numbers
-      /^(\+968|968)?2[4-9]\d{6}$/, // Landline numbers
-    ]
-  
-    const isValid = patterns.some((pattern) => pattern.test(cleanPhone))
-  
-    if (!isValid) {
-      errors.push("رقم الهاتف غير صحيح (مثال: +968 91234567)")
-    }
-  
-    return { isValid: errors.length === 0, errors }
-  }
+
   

