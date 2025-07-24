@@ -35,6 +35,7 @@ const serviceProviders = [
   { id: "awaser", name: "اواصر", type: "awaser" },
   { id: "vodafone", name: "فودافون", type: "vodavon" },
   { id: "water-main", name: "شركة المياه الرئيسية", type: "telecom" },
+  { id: "electricity-main", name: "شركة الكهرباء  الرئيسية", type: "electricity" },
 ]
 
 
