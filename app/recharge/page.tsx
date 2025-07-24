@@ -283,7 +283,7 @@ export default function RechargePage() {
                 <div className="pt-4">
                   <Button
                     type="submit"
-                    className="w-full bg-[#00843D] hover:bg-[#006e33] text-white font-bold text-lg py-6 rounded-lg"
+                    className="w-full bg-[#9aca3f] hover:bg-[#006e33] text-white font-bold text-lg py-6 rounded-lg"
                   >
                     دفع
                   </Button>
@@ -307,7 +307,7 @@ export default function RechargePage() {
         )}
       </main>
 
-      <footer className="bg-[#00843D] text-white py-8 px-4">
+      <footer className="bg-[#9aca3f] text-white py-8 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <p>© 2025 خدمة إعادة الشحن في عمان. جميع الحقوق محفوظة.</p>
         </div>

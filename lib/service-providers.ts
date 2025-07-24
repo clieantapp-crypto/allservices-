@@ -9,6 +9,13 @@ export interface ServiceProvider {
   
   export const serviceProviders: ServiceProvider[] = [
     // Telecom providers in Oman
+      // Electricity providers in Oman
+    {
+      id: "muscat-electricity",
+      name: "شركة الكهرباء العامة",
+      type: "electricity",
+      logo: "/placeholder.svg?height=40&width=40",
+    },
     {
       id: "omantel",
       name: "عمانتل",
