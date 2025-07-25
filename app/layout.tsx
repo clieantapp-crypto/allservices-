@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={cn("min-h-screen bg-background font-sans antialiased", notoKufiArabic.className)}>
+      <body>
         {children}
       </body>
     </html>
