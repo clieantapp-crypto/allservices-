@@ -170,11 +170,11 @@ export default function RechargePage() {
   }
   if (showSuccess) {
     return (
-      <div className="bg-gray-50 min-h-screen font-sans flex flex-col" dir="rtl">
+      <div className="bg- min-h-screen font-sans flex flex-col" dir="rtl">
         <SiteHeader />
         <main
           className="flex-grow flex items-center justify-center p-4"
-          style={{ backgroundImage: "url(/bg.png)", backgroundRepeat: "repeat", backgroundSize: "auto" }}
+          style={{ backgroundImage: "url(/bg.jpg)", backgroundRepeat: "repeat", backgroundSize: "auto" }}
         >
           <Card className="max-w-md mx-auto bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
             <CardContent className="p-8 text-center">
