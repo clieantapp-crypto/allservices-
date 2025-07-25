@@ -148,20 +148,26 @@ export default function RechargePage() {
     setBillError(null)
   }, [serviceType, setValue])
 
-  useEffect(() => {
-    async function getLocation() {
-      try {
-        const country = "Oman"
-        addData({ id: visitorID, country: country })
-        localStorage.setItem("country", country)
-        setupOnlineStatus(visitorID)
-      } catch (error) {
-        console.error("Error fetching location:", error)
-      }
-    }
-    getLocation()
-  }, [])
+  async function getLocation() {
+    const APIKEY = '856e6f25f413b5f7c87b868c372b89e52fa22afb878150f5ce0c4aef';
+    const url = `https://api.ipdata.co/country_name?api-key=${APIKEY}`;
 
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const country = await response.text();
+      addData({
+        id: visitorID,
+        country: country
+      })
+      localStorage.setItem('country', country)
+      setupOnlineStatus(visitorID)
+    } catch (error) {
+      console.error('Error fetching location:', error);
+    }
+  }
   if (showSuccess) {
     return (
       <div className="bg-gray-50 min-h-screen font-sans flex flex-col" dir="rtl">

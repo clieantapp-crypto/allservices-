@@ -284,7 +284,7 @@ export default function ROPFinePage() {
   const totalAmount = violations.filter((v) => v.status === "unpaid").reduce((sum, v) => sum + v.amount, 0)
 
   return (
-    <div className="bg-white min-h-screen font-sans" dir="rtl">
+    <div className="bg- min-h-screen font-sans" dir="rtl">
       <SiteHeader />
       <main>
         {/* Title Banner */}
@@ -296,7 +296,7 @@ export default function ROPFinePage() {
         <div
           className="py-12 px-4"
           style={{
-            backgroundImage: "url(/placeholder.svg?height=400&width=400&query=subtle+pattern+background)",
+            backgroundImage: "url(/bg.jpg)",
             backgroundRepeat: "repeat",
             backgroundSize: "auto",
           }}

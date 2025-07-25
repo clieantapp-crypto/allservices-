@@ -209,19 +209,18 @@ export default function ViolationsPage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans flex flex-col" dir="rtl">
+    <div className="bg-sh min-h-screen font-sans flex flex-col" dir="rtl">
       <SiteHeader />
       <main className="flex-grow">
         <div className="bg-[#85a646] text-white text-center py-6">
           <h1 className="text-2xl md:text-3xl font-bold">دفع المخالفات المرورية</h1>
-          <p className="text-sm opacity-90 mt-2">شرطة عمان السلطانية</p>
         </div>
         <div
           className="py-12 px-4"
-          style={{ backgroundImage: "url(/bg.png)", backgroundRepeat: "repeat", backgroundSize: "auto" }}
+          style={{ backgroundImage: "url(/bg.jpg)", backgroundRepeat: "repeat", backgroundSize: "auto" }}
         >
           {!showViolations ? (
-            <Card className="max-w-md mx-auto bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
+            <Card className="max-w-md mx-auto bg-backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
               <CardContent className="p-8">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="text-center">
