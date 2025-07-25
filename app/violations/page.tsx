@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { ViolationsList } from "@/components/violations-list"
-import { SiteHeader } from "@/components/ui/header"
+import { SiteHeader } from "@/components/site-header"
 
 interface Violation {
   id: string

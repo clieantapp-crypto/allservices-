@@ -1,5 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface Violation {
   id: string
@@ -7,7 +8,6 @@ interface Violation {
   date: string
   location: string
   amount: number
-  plateNumber: string
   status: "unpaid" | "paid"
 }
 
@@ -17,41 +17,70 @@ interface ViolationsListProps {
 
 export function ViolationsList({ violations }: ViolationsListProps) {
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">المخالفات المسجلة ({violations.length})</h3>
-
-      {violations.map((violation) => (
-        <Card key={violation.id} className="border border-gray-200">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-800 mb-1">{violation.type}</h4>
-                <p className="text-sm text-gray-600 mb-1">
-                  <span className="font-medium">التاريخ:</span> {violation.date}
-                </p>
-                <p className="text-sm text-gray-600 mb-1">
-                  <span className="font-medium">الموقع:</span> {violation.location}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">رقم اللوحة:</span> {violation.plateNumber}
-                </p>
+    <div>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>نوع المخالفة</TableHead>
+              <TableHead>المبلغ (ر.ع)</TableHead>
+              <TableHead>التاريخ</TableHead>
+              <TableHead>الموقع</TableHead>
+              <TableHead>الحالة</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {violations.map((v) => (
+              <TableRow key={v.id}>
+                <TableCell className="font-medium">{v.type}</TableCell>
+                <TableCell>{v.amount.toFixed(2)}</TableCell>
+                <TableCell>{v.date}</TableCell>
+                <TableCell>{v.location}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={v.status === "paid" ? "default" : "destructive"}
+                    className={v.status === "paid" ? "bg-green-600 text-white" : ""}
+                  >
+                    {v.status === "paid" ? "مدفوعة" : "غير مدفوعة"}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="md:hidden space-y-4">
+        {violations.map((v) => (
+          <Card key={v.id} className="bg-white/80">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{v.type}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between border-b pb-1">
+                <span className="font-semibold text-gray-600">المبلغ:</span>
+                <span className="font-bold">{v.amount.toFixed(2)} ر.ع</span>
               </div>
-
-              <div className="text-left">
-                <div className="text-lg font-bold text-gray-800 mb-2">{violation.amount} ر.ع</div>
+              <div className="flex justify-between border-b pb-1">
+                <span className="font-semibold text-gray-600">التاريخ:</span>
+                <span>{v.date}</span>
+              </div>
+              <div className="flex justify-between border-b pb-1">
+                <span className="font-semibold text-gray-600">الموقع:</span>
+                <span className="text-left">{v.location}</span>
+              </div>
+              <div className="flex justify-between items-center pt-1">
+                <span className="font-semibold text-gray-600">الحالة:</span>
                 <Badge
-                  variant={violation.status === "paid" ? "secondary" : "destructive"}
-                  className={violation.status === "paid" ? "bg-green-100 text-green-800" : ""}
+                  variant={v.status === "paid" ? "default" : "destructive"}
+                  className={v.status === "paid" ? "bg-green-600 text-white" : ""}
                 >
-                  {violation.status === "paid" ? "مدفوعة" : "غير مدفوعة"}
+                  {v.status === "paid" ? "مدفوعة" : "غير مدفوعة"}
                 </Badge>
               </div>
-            </div>
-
-            <div className="text-xs text-gray-500 pt-2 border-t">رقم المخالفة: {violation.id}</div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

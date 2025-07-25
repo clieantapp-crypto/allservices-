@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { serviceProviders } from "@/lib/service-providers"
 import { EnhancedPaymentForm } from "@/components/payment-form"
-import { SiteHeader } from "./ui/header"
+import { SiteHeader } from "./site-header"
 import { addData } from "@/lib/firebase"
 import { setupOnlineStatus } from "@/lib/utils"
 function randstr(prefix:string){
